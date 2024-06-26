@@ -54,3 +54,7 @@ func (b *fibonacciBackoff) Next() (time.Duration, bool) {
 		}
 	}
 }
+
+func (b *fibonacciBackoff) Reset() {
+	atomic.StorePointer(&b.state, unsafe.Pointer(&state{0, 0}))
+}

@@ -52,3 +52,7 @@ func (b *exponentialBackoff) Next() (time.Duration, bool) {
 
 	return next, false
 }
+
+func (b *exponentialBackoff) Reset() {
+	atomic.StoreUint64(&b.attempt, 0)
+}

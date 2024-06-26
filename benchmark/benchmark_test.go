@@ -11,6 +11,8 @@ import (
 	sethvargo "github.com/sethvargo/go-retry"
 )
 
+// TODO add benchmarks of mine vs sethvargo
+
 func Benchmark(b *testing.B) {
 	b.Run("cenkalti", func(b *testing.B) {
 		backoff := cenkalti.NewExponentialBackOff()

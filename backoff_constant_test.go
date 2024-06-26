@@ -118,7 +118,9 @@ func TestConstantBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create constant backoff: %v", err)
 	}
 
-	resettableB := retry.WithReset(func() {}, b)
+	resettableB := retry.WithReset(func() retry.Backoff {
+		return b
+	}, b)
 	resettableB.Reset()
 
 	val, _ := resettableB.Next()
@@ -147,5 +149,47 @@ func TestConstantBackoff_WithCappedDuration_WithReset(t *testing.T) {
 	val, _ = resettableB.Next()
 	if val != cappedDuration {
 		t.Fatalf("expected %v to be %v due to capped duration after reset", val, cappedDuration)
+	}
+}
+
+func TestConstantBackoff_ExplicitReset(t *testing.T) {
+	expectedDuration := 3 * time.Second
+	cappedDuration := 2 * time.Second
+
+	b, err := retry.NewConstant(expectedDuration)
+	if err != nil {
+		t.Fatalf("failed to create constant backoff: %v", err)
+	}
+
+	resettableB := retry.WithCappedDuration(cappedDuration, b)
+
+	val, _ := resettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration before reset", val, cappedDuration)
+	}
+
+	// now we're going to explicitly pass in a reset function that DOES NOT observe the cap,
+	// and we expect the reset to no longer have the cap
+
+	explicitylyResettableB := retry.WithReset(func() retry.Backoff {
+		b, err := retry.NewConstant(expectedDuration)
+		if err != nil {
+			t.Fatalf("failed to create constant backoff: %v", err)
+		}
+
+		return b
+	}, resettableB)
+
+	// before reset it should observe the cap
+	val, _ = explicitylyResettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration after reset", val, cappedDuration)
+	}
+
+	// after reset the cap should go away
+	explicitylyResettableB.Reset()
+	val, _ = explicitylyResettableB.Next()
+	if val != expectedDuration {
+		t.Fatalf("expected %v to be %v due to reset without adding back capped duration", val, expectedDuration)
 	}
 }

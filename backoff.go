@@ -9,7 +9,11 @@ import (
 type Backoff interface {
 	// Next returns the time duration to wait and whether to stop.
 	Next() (next time.Duration, stop bool)
+	// Reset sets the undecorated backoff back to its initial parameters
+	Reset()
 }
+
+// TODO clean up interface, struct, etc
 
 var _ Backoff = (BackoffFunc)(nil)
 
@@ -20,6 +24,8 @@ type BackoffFunc func() (time.Duration, bool)
 func (b BackoffFunc) Next() (time.Duration, bool) {
 	return b()
 }
+
+func (b BackoffFunc) Reset() {}
 
 type ResettableBackoff struct {
 	Backoff
@@ -35,11 +41,15 @@ func (b *ResettableBackoff) Reset() {
 	b.reset()
 }
 
-func WithReset(reset func(), next Backoff) *ResettableBackoff {
-	return &ResettableBackoff{
+func WithReset(reset func() Backoff, next Backoff) *ResettableBackoff {
+	rb := &ResettableBackoff{
 		Backoff: next,
-		reset:   reset,
 	}
+	rb.reset = func() {
+		rb.Backoff = reset()
+	}
+
+	return rb
 }
 
 // WithJitter wraps a backoff function and adds the specified jitter. j can be
@@ -63,8 +73,10 @@ func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() {
-		// nothing to reset for WithJitter
+	reset := func() Backoff {
+		// TODO is this threadsafe?
+		next.Reset()
+		return nextWithJitter
 	}
 
 	return WithReset(reset, nextWithJitter)
@@ -94,8 +106,10 @@ func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() {
-		// nothing to reset for WithJitter
+	reset := func() Backoff {
+		// TODO is this threadsafe
+		next.Reset()
+		return nextWithJitterPercent
 	}
 
 	return WithReset(reset, nextWithJitterPercent)
@@ -123,10 +137,13 @@ func WithMaxRetries(max uint64, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() {
+	reset := func() Backoff {
 		l.Lock()
 		defer l.Unlock()
 		attempt = 0
+
+		next.Reset()
+		return nextWithMaxRetries
 	}
 
 	return WithReset(reset, nextWithMaxRetries)
@@ -149,8 +166,11 @@ func WithCappedDuration(cap time.Duration, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() {
+	reset := func() Backoff {
 		// nothing to reset for WithCappedDuration
+		// TODO perhaps need to reset the underlying thing too?
+		next.Reset()
+		return nextWithCappedDuration
 	}
 
 	return WithReset(reset, nextWithCappedDuration)
@@ -183,10 +203,13 @@ func WithMaxDuration(timeout time.Duration, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() {
+	reset := func() Backoff {
 		l.Lock()
 		defer l.Unlock()
 		start = time.Now()
+
+		next.Reset()
+		return nextWithMaxDuration
 	}
 
 	return WithReset(reset, nextWithMaxDuration)

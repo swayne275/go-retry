@@ -132,7 +132,14 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 	}
 
 	// TODO should calling code even provide a reset func???
-	resettableB := retry.WithReset(func() {}, b)
+	resettableB := retry.WithReset(func() retry.Backoff {
+		newB, err := retry.NewExponential(base)
+		if err != nil {
+			t.Fatalf("failed to reset exponential backoff: %v", err)
+		}
+
+		return newB
+	}, b)
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
@@ -140,18 +147,75 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 		if val != expected[i] {
 			t.Errorf("pre reset: expected %v to be %v", val, expected[i])
 		}
-
 	}
 
-	resettableB.Reset()
-
 	// test post reset. since we reset we expect the same sequence of values as before
-	// TODO this doesn't work
+	resettableB.Reset()
 	for i := 0; i < numRounds; i++ {
 		val, _ := resettableB.Next()
 		if val != expected[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expected[i])
 		}
+	}
+}
 
+func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
+	base := 2 * time.Second
+	cappedDuration := 4 * time.Second
+	numRounds := 3
+	expectedCapped := []time.Duration{
+		2 * time.Second,
+		4 * time.Second,
+		4 * time.Second,
+	}
+
+	b, err := retry.NewExponential(base)
+	if err != nil {
+		t.Fatalf("failed to create exponential backoff: %v", err)
+	}
+
+	cappedB := retry.WithCappedDuration(cappedDuration, b)
+
+	// test pre reset
+	for i := 0; i < numRounds; i++ {
+		val, _ := cappedB.Next()
+		if val != expectedCapped[i] {
+			t.Errorf("pre reset: expected %v to be %v", val, expectedCapped[i])
+		}
+	}
+
+	// test post reset. since we reset we expect the same sequence of values as before
+	// and the cap should still be applied.
+	cappedB.Reset()
+	for i := 0; i < numRounds; i++ {
+		val, _ := cappedB.Next()
+		if val != expectedCapped[i] {
+			t.Errorf("post reset: expected %v to be %v", val, expectedCapped[i])
+		}
+	}
+
+	// test post user-defined reset.
+	// since we defined the reset function without decorators, the decorators should not be observed.
+	expectedAfterExplicitReset := []time.Duration{
+		2 * time.Second,
+		4 * time.Second,
+		8 * time.Second,
+	}
+	resettableB := retry.WithReset(func() retry.Backoff {
+		// don't set a cap on the explicit reset
+		newB, err := retry.NewExponential(base)
+		if err != nil {
+			t.Fatalf("failed to reset exponential backoff: %v", err)
+		}
+
+		return newB
+	}, cappedB)
+
+	resettableB.Reset()
+	for i := 0; i < numRounds; i++ {
+		val, _ := resettableB.Next()
+		if val != expectedAfterExplicitReset[i] {
+			t.Errorf("post reset: expected %v to be %v", val, expectedAfterExplicitReset[i])
+		}
 	}
 }

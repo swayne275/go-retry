@@ -129,8 +129,13 @@ func TestWithMaxDuration(t *testing.T) {
 
 func TestResettableBackoff(t *testing.T) {
 	var attempt uint64
-	b := WithReset(func() {
+	b := WithReset(func() Backoff {
 		attempt = 0
+
+		return BackoffFunc(func() (time.Duration, bool) {
+			attempt++
+			return time.Duration(attempt) * time.Second, false
+		})
 	}, BackoffFunc(func() (time.Duration, bool) {
 		attempt++
 		return time.Duration(attempt) * time.Second, false
