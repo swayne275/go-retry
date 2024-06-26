@@ -2,10 +2,11 @@ package example
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	// TODO update this to import my version
 	"github.com/sethvargo/go-retry"
+	// TODO update this to import my version
 )
 
 func ExampleBackoffFunc() {
@@ -102,4 +103,23 @@ func ExampleWithMaxDuration() {
 	}); err != nil {
 		// handle the error here
 	}
+}
+
+func ExampleNewConstant() {
+	b, err := retry.NewConstant(1 * time.Second)
+	if err != nil {
+		// handle the error here, likely from bad input
+		return
+	}
+
+	for i := 0; i < 5; i++ {
+		val, _ := b.Next()
+		fmt.Printf("%v\n", val)
+	}
+	// Output:
+	// 1s
+	// 1s
+	// 1s
+	// 1s
+	// 1s
 }

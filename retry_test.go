@@ -188,7 +188,10 @@ func TestCancel(t *testing.T) {
 		}
 
 		const delay time.Duration = time.Millisecond
-		b := retry.NewConstant(delay)
+		b, err := retry.NewConstant(delay)
+		if err != nil {
+			t.Fatalf("failed to create constant backoff: %v", err)
+		}
 
 		const maxRetries = 5
 		b = retry.WithMaxRetries(maxRetries, b)

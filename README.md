@@ -2,6 +2,26 @@
 
 [![GoDoc](https://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/mod/github.com/sethvargo/go-retry)
 
+Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
+
+TODO:
+- potentially update the import to be like go-backoff
+- split up into better package isolation
+- setup github actions to run tests?
+- tune up repeat.go to be useful
+- perhaps have repeat and retry be separate packages so each can have a Do method?
+
+## Added features
+
+### infinite retries until error
+Repeat will continually do whatever is in the RepeatFunc until it returns an error.
+
+It does not observe RetryableError, as there is no need for this functionality.
+
+### backoff reset
+You might want to reset a backoff of non constant duration (eg if an activity happens that
+says you should poll faster).
+
 Retry is a Go library for facilitating retry logic and backoff. It's highly
 extensible with full control over how and when retries occur. You can also write
 your own custom backoff functions by implementing the Backoff interface.

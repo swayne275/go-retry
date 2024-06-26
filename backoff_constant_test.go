@@ -1,7 +1,6 @@
 package retry_test
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"testing"
@@ -14,10 +13,11 @@ func TestConstantBackoff(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name  string
-		base  time.Duration
-		tries int
-		exp   []time.Duration
+		name      string
+		base      time.Duration
+		tries     int
+		exp       []time.Duration
+		expectErr bool
 	}{
 		{
 			name:  "single",
@@ -60,6 +60,13 @@ func TestConstantBackoff(t *testing.T) {
 				1 * time.Nanosecond,
 			},
 		},
+		{
+			name:      "bad input duration",
+			base:      0 * time.Nanosecond,
+			tries:     0,
+			exp:       []time.Duration{},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -68,7 +75,13 @@ func TestConstantBackoff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			b := retry.NewConstant(tc.base)
+			b, err := retry.NewConstant(tc.base)
+			if tc.expectErr && err == nil {
+				t.Fatal("expected an error")
+			}
+			if !tc.expectErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
 			resultsCh := make(chan time.Duration, tc.tries)
 			for i := 0; i < tc.tries; i++ {
@@ -96,19 +109,4 @@ func TestConstantBackoff(t *testing.T) {
 			}
 		})
 	}
-}
-
-func ExampleNewConstant() {
-	b := retry.NewConstant(1 * time.Second)
-
-	for i := 0; i < 5; i++ {
-		val, _ := b.Next()
-		fmt.Printf("%v\n", val)
-	}
-	// Output:
-	// 1s
-	// 1s
-	// 1s
-	// 1s
-	// 1s
 }
