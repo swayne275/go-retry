@@ -5,6 +5,9 @@
 Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
 
 TODO:
+- get exponential backoff working with reset
+- update other backoffs to not panic, and update tests accordingly
+- figure out if we can delete stuff (eg Constant() and the TODOs around that sort of function)
 - potentially update the import to be like go-backoff
 - split up into better package isolation
 - setup github actions to run tests?

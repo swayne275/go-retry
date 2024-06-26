@@ -110,3 +110,42 @@ func TestConstantBackoff(t *testing.T) {
 		})
 	}
 }
+
+func TestConstantBackoff_WithReset(t *testing.T) {
+	expectedDuration := 3 * time.Second
+	b, err := retry.NewConstant(expectedDuration)
+	if err != nil {
+		t.Fatalf("failed to create constant backoff: %v", err)
+	}
+
+	resettableB := retry.WithReset(func() {}, b)
+	resettableB.Reset()
+
+	val, _ := resettableB.Next()
+	if val != expectedDuration {
+		t.Errorf("expected %v to be %v", val, expectedDuration)
+	}
+}
+
+func TestConstantBackoff_WithCappedDuration_WithReset(t *testing.T) {
+	expectedDuration := 3 * time.Second
+	cappedDuration := 2 * time.Second
+
+	b, err := retry.NewConstant(expectedDuration)
+	if err != nil {
+		t.Fatalf("failed to create constant backoff: %v", err)
+	}
+
+	resettableB := retry.WithCappedDuration(cappedDuration, b)
+
+	val, _ := resettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration before reset", val, cappedDuration)
+	}
+
+	resettableB.Reset()
+	val, _ = resettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration after reset", val, cappedDuration)
+	}
+}
