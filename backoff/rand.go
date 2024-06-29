@@ -1,4 +1,6 @@
-package retry
+package backoff
+
+// TODO test
 
 import (
 	"math/rand"

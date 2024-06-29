@@ -1,4 +1,4 @@
-package retry_test
+package backoff_test
 
 import (
 	"math"
@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/swayne275/go-retry"
+	"github.com/swayne275/go-retry/backoff"
+	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
-func TestExponentialBackoff(t *testing.T) {
+func TestFibonacciBackoff(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -29,24 +30,36 @@ func TestExponentialBackoff(t *testing.T) {
 			},
 		},
 		{
+			name:  "max",
+			base:  10 * time.Millisecond,
+			tries: 5,
+			exp: []time.Duration{
+				10 * time.Millisecond,
+				20 * time.Millisecond,
+				30 * time.Millisecond,
+				50 * time.Millisecond,
+				80 * time.Millisecond,
+			},
+		},
+		{
 			name:  "many",
 			base:  1 * time.Nanosecond,
 			tries: 14,
 			exp: []time.Duration{
 				1 * time.Nanosecond,
 				2 * time.Nanosecond,
-				4 * time.Nanosecond,
+				3 * time.Nanosecond,
+				5 * time.Nanosecond,
 				8 * time.Nanosecond,
-				16 * time.Nanosecond,
-				32 * time.Nanosecond,
-				64 * time.Nanosecond,
-				128 * time.Nanosecond,
-				256 * time.Nanosecond,
-				512 * time.Nanosecond,
-				1024 * time.Nanosecond,
-				2048 * time.Nanosecond,
-				4096 * time.Nanosecond,
-				8192 * time.Nanosecond,
+				13 * time.Nanosecond,
+				21 * time.Nanosecond,
+				34 * time.Nanosecond,
+				55 * time.Nanosecond,
+				89 * time.Nanosecond,
+				144 * time.Nanosecond,
+				233 * time.Nanosecond,
+				377 * time.Nanosecond,
+				610 * time.Nanosecond,
 			},
 		},
 		{
@@ -56,11 +69,11 @@ func TestExponentialBackoff(t *testing.T) {
 			exp: []time.Duration{
 				100_000 * time.Hour,
 				200_000 * time.Hour,
-				400_000 * time.Hour,
+				300_000 * time.Hour,
+				500_000 * time.Hour,
 				800_000 * time.Hour,
-				1_600_000 * time.Hour,
-				math.MaxInt64,
-				math.MaxInt64,
+				1_300_000 * time.Hour,
+				2_100_000 * time.Hour,
 				math.MaxInt64,
 				math.MaxInt64,
 				math.MaxInt64,
@@ -81,7 +94,7 @@ func TestExponentialBackoff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			b, err := retry.NewExponential(tc.base)
+			b, err := backoff.NewFibonacci(tc.base)
 			if tc.expectErr && err == nil {
 				t.Fatal("expected an error")
 			}
@@ -117,24 +130,26 @@ func TestExponentialBackoff(t *testing.T) {
 	}
 }
 
-func TestExponentialBackoff_WithReset(t *testing.T) {
-	base := 2 * time.Second
-	numRounds := 3
+func TestFibonacciBackoff_WithReset(t *testing.T) {
+	base := 1 * time.Second
+	numRounds := 5
 	expected := []time.Duration{
+		1 * time.Second,
 		2 * time.Second,
-		4 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
 		8 * time.Second,
 	}
 
-	b, err := retry.NewExponential(base)
+	b, err := backoff.NewFibonacci(base)
 	if err != nil {
-		t.Fatalf("failed to create exponential backoff: %v", err)
+		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	resettableB := retry.WithReset(func() retry.Backoff {
-		newB, err := retry.NewExponential(base)
+	resettableB := backoff.WithReset(func() cb.Backoff {
+		newB, err := backoff.NewFibonacci(base)
 		if err != nil {
-			t.Fatalf("failed to reset exponential backoff: %v", err)
+			t.Fatalf("failed to reset fibonacci backoff: %v", err)
 		}
 
 		return newB
@@ -158,22 +173,75 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 	}
 }
 
-func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
-	base := 2 * time.Second
-	cappedDuration := 4 * time.Second
-	numRounds := 3
-	expectedCapped := []time.Duration{
+func TestFibonacciBackoff_WithReset_ChangeBase(t *testing.T) {
+	base := 1 * time.Second
+	numRounds := 5
+	expected := []time.Duration{
+		1 * time.Second,
+		2 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
+		8 * time.Second,
+	}
+
+	b, err := backoff.NewFibonacci(base)
+	if err != nil {
+		t.Fatalf("failed to create fibonacci backoff: %v", err)
+	}
+
+	newBase := 2 * time.Second
+	newExpected := []time.Duration{
 		2 * time.Second,
 		4 * time.Second,
-		4 * time.Second,
+		6 * time.Second,
+		10 * time.Second,
+		16 * time.Second,
+	}
+	resettableB := backoff.WithReset(func() cb.Backoff {
+		newB, err := backoff.NewFibonacci(newBase)
+		if err != nil {
+			t.Fatalf("failed to reset fibonacci backoff: %v", err)
+		}
+
+		return newB
+	}, b)
+
+	// test pre reset
+	for i := 0; i < numRounds; i++ {
+		val, _ := resettableB.Next()
+		if val != expected[i] {
+			t.Errorf("pre reset: expected %v to be %v", val, expected[i])
+		}
 	}
 
-	b, err := retry.NewExponential(base)
+	// test post reset. since we reset with a new base we expect new values
+	resettableB.Reset()
+	for i := 0; i < numRounds; i++ {
+		val, _ := resettableB.Next()
+		if val != newExpected[i] {
+			t.Errorf("post reset: expected %v to be %v", val, expected[i])
+		}
+	}
+}
+
+func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
+	base := 1 * time.Second
+	cappedDuration := 5 * time.Second
+	numRounds := 5
+	expectedCapped := []time.Duration{
+		1 * time.Second,
+		2 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
+		5 * time.Second,
+	}
+
+	b, err := backoff.NewFibonacci(base)
 	if err != nil {
-		t.Fatalf("failed to create exponential backoff: %v", err)
+		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	cappedB := retry.WithCappedDuration(cappedDuration, b)
+	cappedB := backoff.WithCappedDuration(cappedDuration, b)
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
@@ -196,15 +264,18 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 	// test post user-defined reset.
 	// since we define the reset function without decorators, the decorators should not be observed.
 	expectedAfterExplicitReset := []time.Duration{
+		1 * time.Second,
 		2 * time.Second,
-		4 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
 		8 * time.Second,
 	}
-	resettableB := retry.WithReset(func() retry.Backoff {
+
+	resettableB := backoff.WithReset(func() cb.Backoff {
 		// don't set a cap on the explicit reset
-		newB, err := retry.NewExponential(base)
+		newB, err := backoff.NewFibonacci(base)
 		if err != nil {
-			t.Fatalf("failed to reset exponential backoff: %v", err)
+			t.Fatalf("failed to reset fibonacci backoff: %v", err)
 		}
 
 		return newB

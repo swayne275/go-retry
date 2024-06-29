@@ -3,6 +3,8 @@ package retry
 import (
 	"context"
 	"time"
+
+	"github.com/swayne275/go-retry/common/backoff"
 )
 
 // RepeatFunc is a function passed to retry.
@@ -11,7 +13,7 @@ type RepeatFunc func(ctx context.Context) error
 // Repeat wraps a function with a backoff to repeat until it returns an error, or the backoff
 // signals to stop.
 // The provided context is passed to the RepeatFunc.
-func Repeat(ctx context.Context, b Backoff, f RepeatFunc) error {
+func Repeat(ctx context.Context, b backoff.Backoff, f RepeatFunc) error {
 	for {
 		// Return immediately if ctx is canceled
 		select {

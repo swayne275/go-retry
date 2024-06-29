@@ -1,4 +1,4 @@
-package retry
+package backoff
 
 import (
 	"context"
@@ -6,6 +6,9 @@ import (
 	"math"
 	"sync/atomic"
 	"time"
+
+	"github.com/swayne275/go-retry"
+	"github.com/swayne275/go-retry/common/backoff"
 )
 
 type exponentialBackoff struct {
@@ -16,13 +19,13 @@ type exponentialBackoff struct {
 // Exponential is a wrapper around Retry that uses an exponential backoff. See
 // NewExponential.
 // TODO is this useful or fine as an example?
-func Exponential(ctx context.Context, base time.Duration, f RetryFunc) error {
+func Exponential(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
 	b, err := NewExponential(base)
 	if err != nil {
 		return fmt.Errorf("failed to create exponential backoff: %w", err)
 	}
 
-	return Do(ctx, b, f)
+	return retry.Do(ctx, b, f)
 }
 
 // NewExponential creates a new exponential backoff using the starting value of
@@ -32,7 +35,7 @@ func Exponential(ctx context.Context, base time.Duration, f RetryFunc) error {
 // for a 64-bit integer.
 //
 // It returns an error if the given base is less than zero.
-func NewExponential(base time.Duration) (Backoff, error) {
+func NewExponential(base time.Duration) (backoff.Backoff, error) {
 	if base <= 0 {
 		return nil, fmt.Errorf("base must be greater than 0")
 	}

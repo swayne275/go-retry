@@ -16,6 +16,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/swayne275/go-retry/common/backoff"
 )
 
 // RetryFunc is a function passed to retry.
@@ -48,7 +50,7 @@ func (e *retryableError) Error() string {
 
 // Do wraps a function with a backoff to retry. The provided context is the same
 // context passed to the RetryFunc.
-func Do(ctx context.Context, b Backoff, f RetryFunc) error {
+func Do(ctx context.Context, b backoff.Backoff, f RetryFunc) error {
 	for {
 		// Return immediately if ctx is canceled
 		select {

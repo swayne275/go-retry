@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/swayne275/go-retry"
+	"github.com/swayne275/go-retry/backoff"
 )
 
 func TestRetryableError(t *testing.T) {
@@ -29,7 +30,7 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := retry.WithMaxRetries(3, retry.BackoffFunc(func() (time.Duration, bool) {
+		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
@@ -51,7 +52,7 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := retry.WithMaxRetries(3, retry.BackoffFunc(func() (time.Duration, bool) {
+		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
@@ -72,7 +73,7 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := retry.WithMaxRetries(1, retry.BackoffFunc(func() (time.Duration, bool) {
+		b := backoff.WithMaxRetries(1, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
@@ -92,7 +93,7 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := retry.WithMaxRetries(3, retry.BackoffFunc(func() (time.Duration, bool) {
+		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
@@ -112,7 +113,7 @@ func TestDo(t *testing.T) {
 	t.Run("context_canceled", func(t *testing.T) {
 		t.Parallel()
 
-		b := retry.BackoffFunc(func() (time.Duration, bool) {
+		b := backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 5 * time.Second, false
 		})
 
@@ -130,13 +131,13 @@ func TestDo(t *testing.T) {
 func ExampleDo_simple() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Nanosecond)
+	b, err := backoff.NewFibonacci(1 * time.Nanosecond)
 	if err != nil {
 		// handle error
 	}
 
 	i := 0
-	if err := retry.Do(ctx, retry.WithMaxRetries(3, b), func(ctx context.Context) error {
+	if err := retry.Do(ctx, backoff.WithMaxRetries(3, b), func(ctx context.Context) error {
 		fmt.Printf("%d\n", i)
 		i++
 		return retry.RetryableError(fmt.Errorf("oops"))
@@ -154,14 +155,14 @@ func ExampleDo_simple() {
 func ExampleDo_customRetry() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Nanosecond)
+	b, err := backoff.NewFibonacci(1 * time.Nanosecond)
 	if err != nil {
 		// handle error
 	}
 
 	// This example demonstrates selectively retrying specific errors. Only errors
 	// wrapped with RetryableError are eligible to be retried.
-	if err := retry.Do(ctx, retry.WithMaxRetries(3, b), func(ctx context.Context) error {
+	if err := retry.Do(ctx, backoff.WithMaxRetries(3, b), func(ctx context.Context) error {
 		resp, err := http.Get("https://google.com/")
 		if err != nil {
 			return err
@@ -194,16 +195,16 @@ func TestCancel(t *testing.T) {
 		}
 
 		const delay time.Duration = time.Millisecond
-		b, err := retry.NewConstant(delay)
+		b, err := backoff.NewConstant(delay)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)
 		}
 
 		const maxRetries = 5
-		b = retry.WithMaxRetries(maxRetries, b)
+		b = backoff.WithMaxRetries(maxRetries, b)
 
 		const jitter time.Duration = 5 * time.Millisecond
-		b = retry.WithJitter(jitter, b)
+		b = backoff.WithJitter(jitter, b)
 
 		// Here we cancel the Context *before* the call to Do
 		cancel()
