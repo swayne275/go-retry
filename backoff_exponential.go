@@ -31,7 +31,7 @@ func Exponential(ctx context.Context, base time.Duration, f RetryFunc) error {
 // Once it overflows, the function constantly returns the maximum time.Duration
 // for a 64-bit integer.
 //
-// It panics if the given base is less than zero.
+// It returns an error if the given base is less than zero.
 func NewExponential(base time.Duration) (Backoff, error) {
 	if base <= 0 {
 		return nil, fmt.Errorf("base must be greater than 0")

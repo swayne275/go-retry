@@ -24,7 +24,10 @@ func ExampleBackoffFunc() {
 	}
 
 	// Middlewrap wrap another backoff:
-	b := retry.NewFibonacci(1 * time.Second)
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle the error here, likely from bad input
+	}
 	b = withShift(5*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(ctx context.Context) error {
@@ -38,7 +41,10 @@ func ExampleBackoffFunc() {
 func ExampleWithJitter() {
 	ctx := context.Background()
 
-	b := retry.NewFibonacci(1 * time.Second)
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle the error here, likely from bad input
+	}
 	b = retry.WithJitter(1*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
@@ -52,7 +58,10 @@ func ExampleWithJitter() {
 func ExampleWithJitterPercent() {
 	ctx := context.Background()
 
-	b := retry.NewFibonacci(1 * time.Second)
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle err
+	}
 	b = retry.WithJitterPercent(5, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
@@ -66,7 +75,10 @@ func ExampleWithJitterPercent() {
 func ExampleWithMaxRetries() {
 	ctx := context.Background()
 
-	b := retry.NewFibonacci(1 * time.Second)
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle err
+	}
 	b = retry.WithMaxRetries(3, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
@@ -80,7 +92,10 @@ func ExampleWithMaxRetries() {
 func ExampleWithCappedDuration() {
 	ctx := context.Background()
 
-	b := retry.NewFibonacci(1 * time.Second)
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle err
+	}
 	b = retry.WithCappedDuration(3*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
@@ -94,7 +109,10 @@ func ExampleWithCappedDuration() {
 func ExampleWithMaxDuration() {
 	ctx := context.Background()
 
-	b := retry.NewFibonacci(1 * time.Second)
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle err
+	}
 	b = retry.WithMaxDuration(5*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
@@ -141,4 +159,22 @@ func ExampleNewExponential() {
 	// 4s
 	// 8s
 	// 16s
+}
+
+func ExampleNewFibonacci() {
+	b, err := retry.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle err
+	}
+
+	for i := 0; i < 5; i++ {
+		val, _ := b.Next()
+		fmt.Printf("%v\n", val)
+	}
+	// Output:
+	// 1s
+	// 2s
+	// 3s
+	// 5s
+	// 8s
 }

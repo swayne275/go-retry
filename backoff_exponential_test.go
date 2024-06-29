@@ -131,7 +131,6 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create exponential backoff: %v", err)
 	}
 
-	// TODO should calling code even provide a reset func???
 	resettableB := retry.WithReset(func() retry.Backoff {
 		newB, err := retry.NewExponential(base)
 		if err != nil {
@@ -195,7 +194,7 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 	}
 
 	// test post user-defined reset.
-	// since we defined the reset function without decorators, the decorators should not be observed.
+	// since we define the reset function without decorators, the decorators should not be observed.
 	expectedAfterExplicitReset := []time.Duration{
 		2 * time.Second,
 		4 * time.Second,

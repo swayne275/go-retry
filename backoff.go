@@ -74,7 +74,6 @@ func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
 	})
 
 	reset := func() Backoff {
-		// TODO is this threadsafe?
 		next.Reset()
 		return nextWithJitter
 	}
@@ -107,7 +106,6 @@ func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
 	})
 
 	reset := func() Backoff {
-		// TODO is this threadsafe
 		next.Reset()
 		return nextWithJitterPercent
 	}
@@ -167,8 +165,6 @@ func WithCappedDuration(cap time.Duration, next Backoff) *ResettableBackoff {
 	})
 
 	reset := func() Backoff {
-		// nothing to reset for WithCappedDuration
-		// TODO perhaps need to reset the underlying thing too?
 		next.Reset()
 		return nextWithCappedDuration
 	}

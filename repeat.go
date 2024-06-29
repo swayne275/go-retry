@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-// TODO add tests
-
 // RepeatFunc is a function passed to retry.
 type RepeatFunc func(ctx context.Context) error
 
