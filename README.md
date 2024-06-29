@@ -1,11 +1,13 @@
 # Retry
 
-[![GoDoc](https://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/mod/github.com/sethvargo/go-retry)
+[![GoDoc](https://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/mod/github.com/swayne275/go-retry)
 
 Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
 
 TODO:
+- update godoc to my version
 - update this documentation with changes
+- put unit tests in same package?
 - update Int63n to not panic?
 - figure out if we can delete stuff (eg Constant() and the TODOs around that sort of function)
 - potentially update the import to be like go-backoff
@@ -58,7 +60,7 @@ import (
   "log"
   "time"
 
-  "github.com/sethvargo/go-retry"
+  "github.com/swayne275/go-retry"
 )
 
 func main() {

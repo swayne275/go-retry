@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sethvargo/go-retry"
-	// TODO update this to import my version
+	"github.com/swayne275/go-retry"
 )
 
 func ExampleBackoffFunc() {
