@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/swayne275/go-retry"
 	"github.com/swayne275/go-retry/common/backoff"
+	"github.com/swayne275/go-retry/retry"
 )
 
 type exponentialBackoff struct {

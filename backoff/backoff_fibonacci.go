@@ -8,8 +8,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/swayne275/go-retry"
 	"github.com/swayne275/go-retry/common/backoff"
+	"github.com/swayne275/go-retry/retry"
 )
 
 type state [2]time.Duration

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/swayne275/go-retry"
 	"github.com/swayne275/go-retry/backoff"
+	"github.com/swayne275/go-retry/retry"
 )
 
 func TestRetryableError(t *testing.T) {
