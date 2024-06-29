@@ -1,23 +1,23 @@
 package retry_test
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
 
-	"github.com/sethvargo/go-retry"
+	"github.com/swayne275/go-retry"
 )
 
 func TestConstantBackoff(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name  string
-		base  time.Duration
-		tries int
-		exp   []time.Duration
+		name      string
+		base      time.Duration
+		tries     int
+		exp       []time.Duration
+		expectErr bool
 	}{
 		{
 			name:  "single",
@@ -60,6 +60,13 @@ func TestConstantBackoff(t *testing.T) {
 				1 * time.Nanosecond,
 			},
 		},
+		{
+			name:      "bad input duration",
+			base:      0 * time.Nanosecond,
+			tries:     0,
+			exp:       []time.Duration{},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -68,7 +75,13 @@ func TestConstantBackoff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			b := retry.NewConstant(tc.base)
+			b, err := retry.NewConstant(tc.base)
+			if tc.expectErr && err == nil {
+				t.Fatal("expected an error")
+			}
+			if !tc.expectErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
 			resultsCh := make(chan time.Duration, tc.tries)
 			for i := 0; i < tc.tries; i++ {
@@ -98,17 +111,85 @@ func TestConstantBackoff(t *testing.T) {
 	}
 }
 
-func ExampleNewConstant() {
-	b := retry.NewConstant(1 * time.Second)
-
-	for i := 0; i < 5; i++ {
-		val, _ := b.Next()
-		fmt.Printf("%v\n", val)
+func TestConstantBackoff_WithReset(t *testing.T) {
+	expectedDuration := 3 * time.Second
+	b, err := retry.NewConstant(expectedDuration)
+	if err != nil {
+		t.Fatalf("failed to create constant backoff: %v", err)
 	}
-	// Output:
-	// 1s
-	// 1s
-	// 1s
-	// 1s
-	// 1s
+
+	resettableB := retry.WithReset(func() retry.Backoff {
+		return b
+	}, b)
+	resettableB.Reset()
+
+	val, _ := resettableB.Next()
+	if val != expectedDuration {
+		t.Errorf("expected %v to be %v", val, expectedDuration)
+	}
+}
+
+func TestConstantBackoff_WithCappedDuration_WithReset(t *testing.T) {
+	expectedDuration := 3 * time.Second
+	cappedDuration := 2 * time.Second
+
+	b, err := retry.NewConstant(expectedDuration)
+	if err != nil {
+		t.Fatalf("failed to create constant backoff: %v", err)
+	}
+
+	resettableB := retry.WithCappedDuration(cappedDuration, b)
+
+	val, _ := resettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration before reset", val, cappedDuration)
+	}
+
+	resettableB.Reset()
+	val, _ = resettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration after reset", val, cappedDuration)
+	}
+}
+
+func TestConstantBackoff_ExplicitReset(t *testing.T) {
+	expectedDuration := 3 * time.Second
+	cappedDuration := 2 * time.Second
+
+	b, err := retry.NewConstant(expectedDuration)
+	if err != nil {
+		t.Fatalf("failed to create constant backoff: %v", err)
+	}
+
+	resettableB := retry.WithCappedDuration(cappedDuration, b)
+
+	val, _ := resettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration before reset", val, cappedDuration)
+	}
+
+	// now we're going to explicitly pass in a reset function that DOES NOT observe the cap,
+	// and we expect the reset to no longer have the cap
+
+	explicitylyResettableB := retry.WithReset(func() retry.Backoff {
+		b, err := retry.NewConstant(expectedDuration)
+		if err != nil {
+			t.Fatalf("failed to create constant backoff: %v", err)
+		}
+
+		return b
+	}, resettableB)
+
+	// before reset it should observe the cap
+	val, _ = explicitylyResettableB.Next()
+	if val != cappedDuration {
+		t.Fatalf("expected %v to be %v due to capped duration after reset", val, cappedDuration)
+	}
+
+	// after reset the cap should go away
+	explicitylyResettableB.Reset()
+	val, _ = explicitylyResettableB.Next()
+	if val != expectedDuration {
+		t.Fatalf("expected %v to be %v due to reset without adding back capped duration", val, expectedDuration)
+	}
 }
