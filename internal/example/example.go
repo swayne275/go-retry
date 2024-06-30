@@ -3,16 +3,19 @@ package example
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/swayne275/go-retry"
+	"github.com/swayne275/go-retry/backoff"
+	cb "github.com/swayne275/go-retry/common/backoff"
+	"github.com/swayne275/go-retry/retry"
 )
 
 func ExampleBackoffFunc() {
 	ctx := context.Background()
 
 	// Example backoff middleware that adds the provided duration t to the result.
-	withShift := func(t time.Duration, next retry.Backoff) retry.BackoffFunc {
+	withShift := func(t time.Duration, next cb.Backoff) backoff.BackoffFunc {
 		return func() (time.Duration, bool) {
 			val, stop := next.Next()
 			if stop {
@@ -23,7 +26,7 @@ func ExampleBackoffFunc() {
 	}
 
 	// Middlewrap wrap another backoff:
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle the error here, likely from bad input
 	}
@@ -40,11 +43,11 @@ func ExampleBackoffFunc() {
 func ExampleWithJitter() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle the error here, likely from bad input
 	}
-	b = retry.WithJitter(1*time.Second, b)
+	b = backoff.WithJitter(1*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -57,11 +60,11 @@ func ExampleWithJitter() {
 func ExampleWithJitterPercent() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle err
 	}
-	b = retry.WithJitterPercent(5, b)
+	b = backoff.WithJitterPercent(5, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -74,11 +77,11 @@ func ExampleWithJitterPercent() {
 func ExampleWithMaxRetries() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle err
 	}
-	b = retry.WithMaxRetries(3, b)
+	b = backoff.WithMaxRetries(3, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -91,11 +94,11 @@ func ExampleWithMaxRetries() {
 func ExampleWithCappedDuration() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle err
 	}
-	b = retry.WithCappedDuration(3*time.Second, b)
+	b = backoff.WithCappedDuration(3*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -108,11 +111,11 @@ func ExampleWithCappedDuration() {
 func ExampleWithMaxDuration() {
 	ctx := context.Background()
 
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle err
 	}
-	b = retry.WithMaxDuration(5*time.Second, b)
+	b = backoff.WithMaxDuration(5*time.Second, b)
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -123,7 +126,7 @@ func ExampleWithMaxDuration() {
 }
 
 func ExampleNewConstant() {
-	b, err := retry.NewConstant(1 * time.Second)
+	b, err := backoff.NewConstant(1 * time.Second)
 	if err != nil {
 		// handle the error here, likely from bad input
 		return
@@ -142,7 +145,7 @@ func ExampleNewConstant() {
 }
 
 func ExampleNewExponential() {
-	b, err := retry.NewExponential(1 * time.Second)
+	b, err := backoff.NewExponential(1 * time.Second)
 	if err != nil {
 		// handle the error here, likely from bad input
 		return
@@ -161,7 +164,7 @@ func ExampleNewExponential() {
 }
 
 func ExampleNewFibonacci() {
-	b, err := retry.NewFibonacci(1 * time.Second)
+	b, err := backoff.NewFibonacci(1 * time.Second)
 	if err != nil {
 		// handle err
 	}
@@ -176,4 +179,58 @@ func ExampleNewFibonacci() {
 	// 3s
 	// 5s
 	// 8s
+}
+
+func ExampleDo_simple() {
+	ctx := context.Background()
+
+	b, err := backoff.NewFibonacci(1 * time.Nanosecond)
+	if err != nil {
+		// handle error
+	}
+
+	i := 0
+	if err := retry.Do(ctx, backoff.WithMaxRetries(3, b), func(ctx context.Context) error {
+		fmt.Printf("%d\n", i)
+		i++
+		return retry.RetryableError(fmt.Errorf("oops"))
+	}); err != nil {
+		// handle error
+	}
+
+	// Output:
+	// 0
+	// 1
+	// 2
+	// 3
+}
+
+func ExampleDo_customRetry() {
+	ctx := context.Background()
+
+	b, err := backoff.NewFibonacci(1 * time.Nanosecond)
+	if err != nil {
+		// handle error
+	}
+
+	// This example demonstrates selectively retrying specific errors. Only errors
+	// wrapped with RetryableError are eligible to be retried.
+	if err := retry.Do(ctx, backoff.WithMaxRetries(3, b), func(ctx context.Context) error {
+		resp, err := http.Get("https://google.com/")
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		switch resp.StatusCode / 100 {
+		case 4:
+			return fmt.Errorf("bad response: %v", resp.StatusCode)
+		case 5:
+			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
+		default:
+			return nil
+		}
+	}); err != nil {
+		// handle error
+	}
 }

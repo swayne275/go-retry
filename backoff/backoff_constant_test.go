@@ -1,4 +1,4 @@
-package retry_test
+package backoff
 
 import (
 	"reflect"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/swayne275/go-retry"
+	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestConstantBackoff(t *testing.T) {
@@ -75,7 +75,7 @@ func TestConstantBackoff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			b, err := retry.NewConstant(tc.base)
+			b, err := NewConstant(tc.base)
 			if tc.expectErr && err == nil {
 				t.Fatal("expected an error")
 			}
@@ -113,12 +113,12 @@ func TestConstantBackoff(t *testing.T) {
 
 func TestConstantBackoff_WithReset(t *testing.T) {
 	expectedDuration := 3 * time.Second
-	b, err := retry.NewConstant(expectedDuration)
+	b, err := NewConstant(expectedDuration)
 	if err != nil {
 		t.Fatalf("failed to create constant backoff: %v", err)
 	}
 
-	resettableB := retry.WithReset(func() retry.Backoff {
+	resettableB := WithReset(func() cb.Backoff {
 		return b
 	}, b)
 	resettableB.Reset()
@@ -133,12 +133,12 @@ func TestConstantBackoff_WithCappedDuration_WithReset(t *testing.T) {
 	expectedDuration := 3 * time.Second
 	cappedDuration := 2 * time.Second
 
-	b, err := retry.NewConstant(expectedDuration)
+	b, err := NewConstant(expectedDuration)
 	if err != nil {
 		t.Fatalf("failed to create constant backoff: %v", err)
 	}
 
-	resettableB := retry.WithCappedDuration(cappedDuration, b)
+	resettableB := WithCappedDuration(cappedDuration, b)
 
 	val, _ := resettableB.Next()
 	if val != cappedDuration {
@@ -156,12 +156,12 @@ func TestConstantBackoff_ExplicitReset(t *testing.T) {
 	expectedDuration := 3 * time.Second
 	cappedDuration := 2 * time.Second
 
-	b, err := retry.NewConstant(expectedDuration)
+	b, err := NewConstant(expectedDuration)
 	if err != nil {
 		t.Fatalf("failed to create constant backoff: %v", err)
 	}
 
-	resettableB := retry.WithCappedDuration(cappedDuration, b)
+	resettableB := WithCappedDuration(cappedDuration, b)
 
 	val, _ := resettableB.Next()
 	if val != cappedDuration {
@@ -171,8 +171,8 @@ func TestConstantBackoff_ExplicitReset(t *testing.T) {
 	// now we're going to explicitly pass in a reset function that DOES NOT observe the cap,
 	// and we expect the reset to no longer have the cap
 
-	explicitylyResettableB := retry.WithReset(func() retry.Backoff {
-		b, err := retry.NewConstant(expectedDuration)
+	explicitylyResettableB := WithReset(func() cb.Backoff {
+		b, err := NewConstant(expectedDuration)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)
 		}

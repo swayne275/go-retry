@@ -1,4 +1,4 @@
-package retry_test
+package backoff
 
 import (
 	"math"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/swayne275/go-retry"
+	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestExponentialBackoff(t *testing.T) {
@@ -81,7 +81,7 @@ func TestExponentialBackoff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			b, err := retry.NewExponential(tc.base)
+			b, err := NewExponential(tc.base)
 			if tc.expectErr && err == nil {
 				t.Fatal("expected an error")
 			}
@@ -126,13 +126,13 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 		8 * time.Second,
 	}
 
-	b, err := retry.NewExponential(base)
+	b, err := NewExponential(base)
 	if err != nil {
 		t.Fatalf("failed to create exponential backoff: %v", err)
 	}
 
-	resettableB := retry.WithReset(func() retry.Backoff {
-		newB, err := retry.NewExponential(base)
+	resettableB := WithReset(func() cb.Backoff {
+		newB, err := NewExponential(base)
 		if err != nil {
 			t.Fatalf("failed to reset exponential backoff: %v", err)
 		}
@@ -168,12 +168,12 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		4 * time.Second,
 	}
 
-	b, err := retry.NewExponential(base)
+	b, err := NewExponential(base)
 	if err != nil {
 		t.Fatalf("failed to create exponential backoff: %v", err)
 	}
 
-	cappedB := retry.WithCappedDuration(cappedDuration, b)
+	cappedB := WithCappedDuration(cappedDuration, b)
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
@@ -200,9 +200,9 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		4 * time.Second,
 		8 * time.Second,
 	}
-	resettableB := retry.WithReset(func() retry.Backoff {
+	resettableB := WithReset(func() cb.Backoff {
 		// don't set a cap on the explicit reset
-		newB, err := retry.NewExponential(base)
+		newB, err := NewExponential(base)
 		if err != nil {
 			t.Fatalf("failed to reset exponential backoff: %v", err)
 		}

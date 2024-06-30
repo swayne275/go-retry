@@ -1,21 +1,15 @@
-package retry
+package backoff
 
 import (
 	"sync"
 	"time"
-)
 
-// Backoff is an interface that backs off.
-type Backoff interface {
-	// Next returns the time duration to wait and whether to stop.
-	Next() (next time.Duration, stop bool)
-	// Reset sets the undecorated backoff back to its initial parameters
-	Reset()
-}
+	"github.com/swayne275/go-retry/common/backoff"
+)
 
 // TODO clean up interface, struct, etc
 
-var _ Backoff = (BackoffFunc)(nil)
+var _ backoff.Backoff = (BackoffFunc)(nil)
 
 // BackoffFunc is a backoff expressed as a function.
 type BackoffFunc func() (time.Duration, bool)
@@ -28,7 +22,7 @@ func (b BackoffFunc) Next() (time.Duration, bool) {
 func (b BackoffFunc) Reset() {}
 
 type ResettableBackoff struct {
-	Backoff
+	backoff.Backoff
 	// reset returns the backoff to its initial state.
 	reset func()
 }
@@ -41,7 +35,7 @@ func (b *ResettableBackoff) Reset() {
 	b.reset()
 }
 
-func WithReset(reset func() Backoff, next Backoff) *ResettableBackoff {
+func WithReset(reset func() backoff.Backoff, next backoff.Backoff) *ResettableBackoff {
 	rb := &ResettableBackoff{
 		Backoff: next,
 	}
@@ -56,7 +50,7 @@ func WithReset(reset func() Backoff, next Backoff) *ResettableBackoff {
 // interpreted as "+/- j". For example, if j were 5 seconds and the backoff
 // returned 20s, the value could be between 15 and 25 seconds. The value can
 // never be less than 0.
-func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
+func WithJitter(j time.Duration, next backoff.Backoff) *ResettableBackoff {
 	r := newLockedRandom(time.Now().UnixNano())
 
 	nextWithJitter := BackoffFunc(func() (time.Duration, bool) {
@@ -73,7 +67,7 @@ func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() Backoff {
+	reset := func() backoff.Backoff {
 		next.Reset()
 		return nextWithJitter
 	}
@@ -85,7 +79,7 @@ func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
 // percentage. j can be interpreted as "+/- j%". For example, if j were 5 and
 // the backoff returned 20s, the value could be between 19 and 21 seconds. The
 // value can never be less than 0 or greater than 100.
-func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
+func WithJitterPercent(j uint64, next backoff.Backoff) *ResettableBackoff {
 	r := newLockedRandom(time.Now().UnixNano())
 
 	nextWithJitterPercent := BackoffFunc(func() (time.Duration, bool) {
@@ -105,7 +99,7 @@ func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() Backoff {
+	reset := func() backoff.Backoff {
 		next.Reset()
 		return nextWithJitterPercent
 	}
@@ -114,7 +108,7 @@ func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
 }
 
 // WithMaxRetries executes the backoff function up until the maximum attempts.
-func WithMaxRetries(max uint64, next Backoff) *ResettableBackoff {
+func WithMaxRetries(max uint64, next backoff.Backoff) *ResettableBackoff {
 	var l sync.Mutex
 	var attempt uint64
 
@@ -135,7 +129,7 @@ func WithMaxRetries(max uint64, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() Backoff {
+	reset := func() backoff.Backoff {
 		l.Lock()
 		defer l.Unlock()
 		attempt = 0
@@ -151,7 +145,7 @@ func WithMaxRetries(max uint64, next Backoff) *ResettableBackoff {
 // backoff. This is NOT a total backoff time, but rather a cap on the maximum
 // value a backoff can return. Without another middleware, the backoff will
 // continue infinitely.
-func WithCappedDuration(cap time.Duration, next Backoff) *ResettableBackoff {
+func WithCappedDuration(cap time.Duration, next backoff.Backoff) *ResettableBackoff {
 	nextWithCappedDuration := BackoffFunc(func() (time.Duration, bool) {
 		val, stop := next.Next()
 		if stop {
@@ -164,7 +158,7 @@ func WithCappedDuration(cap time.Duration, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() Backoff {
+	reset := func() backoff.Backoff {
 		next.Reset()
 		return nextWithCappedDuration
 	}
@@ -175,7 +169,7 @@ func WithCappedDuration(cap time.Duration, next Backoff) *ResettableBackoff {
 // WithMaxDuration sets a maximum on the total amount of time a backoff should
 // execute. It's best-effort, and should not be used to guarantee an exact
 // amount of time.
-func WithMaxDuration(timeout time.Duration, next Backoff) *ResettableBackoff {
+func WithMaxDuration(timeout time.Duration, next backoff.Backoff) *ResettableBackoff {
 	var l sync.RWMutex
 	start := time.Now()
 
@@ -199,7 +193,7 @@ func WithMaxDuration(timeout time.Duration, next Backoff) *ResettableBackoff {
 		return val, false
 	})
 
-	reset := func() Backoff {
+	reset := func() backoff.Backoff {
 		l.Lock()
 		defer l.Unlock()
 		start = time.Now()

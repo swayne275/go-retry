@@ -15,8 +15,14 @@ package retry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/swayne275/go-retry/common/backoff"
 )
+
+var errFunctionReturnedNonRetryableError = fmt.Errorf("function returned non retryable error")
+var errBackoffSignaledToStop = fmt.Errorf("backoff signaled to stop")
 
 // RetryFunc is a function passed to retry.
 type RetryFunc func(ctx context.Context) error
@@ -46,9 +52,10 @@ func (e *retryableError) Error() string {
 	return "retryable: " + e.err.Error()
 }
 
-// Do wraps a function with a backoff to retry. The provided context is the same
-// context passed to the RetryFunc.
-func Do(ctx context.Context, b Backoff, f RetryFunc) error {
+// Do wraps a function with a backoff to retry. It will retry until f returns either
+// nil or a non-retryable error.
+// The provided context is the same context passed to the RetryFunc.
+func Do(ctx context.Context, b backoff.Backoff, f RetryFunc) error {
 	for {
 		// Return immediately if ctx is canceled
 		select {
@@ -65,12 +72,12 @@ func Do(ctx context.Context, b Backoff, f RetryFunc) error {
 		// Not retryable
 		var rerr *retryableError
 		if !errors.As(err, &rerr) {
-			return err
+			return fmt.Errorf("%w: %w", errFunctionReturnedNonRetryableError, err)
 		}
 
 		next, stop := b.Next()
 		if stop {
-			return rerr.Unwrap()
+			return fmt.Errorf("%w: %w", errBackoffSignaledToStop, rerr.Unwrap())
 		}
 
 		// ctx.Done() has priority, so we test it alone first

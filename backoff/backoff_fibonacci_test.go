@@ -1,4 +1,4 @@
-package retry_test
+package backoff
 
 import (
 	"math"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/swayne275/go-retry"
+	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestFibonacciBackoff(t *testing.T) {
@@ -93,7 +93,7 @@ func TestFibonacciBackoff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			b, err := retry.NewFibonacci(tc.base)
+			b, err := NewFibonacci(tc.base)
 			if tc.expectErr && err == nil {
 				t.Fatal("expected an error")
 			}
@@ -140,13 +140,13 @@ func TestFibonacciBackoff_WithReset(t *testing.T) {
 		8 * time.Second,
 	}
 
-	b, err := retry.NewFibonacci(base)
+	b, err := NewFibonacci(base)
 	if err != nil {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	resettableB := retry.WithReset(func() retry.Backoff {
-		newB, err := retry.NewFibonacci(base)
+	resettableB := WithReset(func() cb.Backoff {
+		newB, err := NewFibonacci(base)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
 		}
@@ -183,7 +183,7 @@ func TestFibonacciBackoff_WithReset_ChangeBase(t *testing.T) {
 		8 * time.Second,
 	}
 
-	b, err := retry.NewFibonacci(base)
+	b, err := NewFibonacci(base)
 	if err != nil {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
@@ -196,8 +196,8 @@ func TestFibonacciBackoff_WithReset_ChangeBase(t *testing.T) {
 		10 * time.Second,
 		16 * time.Second,
 	}
-	resettableB := retry.WithReset(func() retry.Backoff {
-		newB, err := retry.NewFibonacci(newBase)
+	resettableB := WithReset(func() cb.Backoff {
+		newB, err := NewFibonacci(newBase)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
 		}
@@ -235,12 +235,12 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		5 * time.Second,
 	}
 
-	b, err := retry.NewFibonacci(base)
+	b, err := NewFibonacci(base)
 	if err != nil {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	cappedB := retry.WithCappedDuration(cappedDuration, b)
+	cappedB := WithCappedDuration(cappedDuration, b)
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
@@ -270,9 +270,9 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		8 * time.Second,
 	}
 
-	resettableB := retry.WithReset(func() retry.Backoff {
+	resettableB := WithReset(func() cb.Backoff {
 		// don't set a cap on the explicit reset
-		newB, err := retry.NewFibonacci(base)
+		newB, err := NewFibonacci(base)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
 		}

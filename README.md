@@ -7,15 +7,9 @@ Builds off of the wonderful work of https://github.com/sethvargo/go-retry but ad
 TODO:
 - update godoc to my version
 - update this documentation with changes
-- put unit tests in same package?
 - update Int63n to not panic?
-- figure out if we can delete stuff (eg Constant() and the TODOs around that sort of function)
-- potentially update the import to be like go-backoff
-- split up into better package isolation
-- setup github actions to run tests?
-- tune up repeat.go to be useful
-- add tests around stuff in repeat.go
-- perhaps have repeat and retry be separate packages so each can have a Do method?
+- add tests to rand.go
+- make rand its own package?
 
 ## Added features
 
