@@ -305,6 +305,83 @@ func TestResettableBackoff_WithCappedDuration(t *testing.T) {
 	}
 }
 
+func TestResettableBackoff_WithMaxDuration(t *testing.T) {
+	t.Parallel()
+
+	baseDuration := 1 * time.Second
+	maxDuration := 250 * time.Millisecond
+	b := WithMaxDuration(maxDuration, BackoffFunc(func() (time.Duration, bool) {
+		return baseDuration, false
+	}))
+
+	validateMaxDuration(t, b, maxDuration)
+
+	// a reset should clear it, and we do the process again
+	b.reset()
+
+	validateMaxDuration(t, b, maxDuration)
+}
+
+// TestResettableBackoff_MultipleDecorators ensures that multiple decorators can be applied to a ResettableBackoff
+// and that the decorators are still observed after a reset.
+func TestResettableBackoff_MultipleDecorators(t *testing.T) {
+	base := 1 * time.Second
+	cappedDuration := 5 * time.Second
+	maxRetries := uint64(7)
+	expected := []time.Duration{
+		1 * time.Second,
+		2 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
+		5 * time.Second,
+		5 * time.Second,
+		5 * time.Second,
+	}
+
+	b, err := NewFibonacci(base)
+	if err != nil {
+		t.Fatalf("failed to create fibonacci backoff: %v", err)
+	}
+
+	cappedB := WithCappedDuration(cappedDuration, b)
+	maxRetriesB := WithMaxRetries(maxRetries, cappedB)
+
+	for _, tc := range expected {
+		val, stop := maxRetriesB.Next()
+		if stop {
+			t.Errorf("pre reset should not stop")
+		}
+		if val != tc {
+			t.Errorf("pre reset expected %v to be %v", val, tc)
+		}
+	}
+
+	// we expect it to stop after the max number of retries
+	_, stop := maxRetriesB.Next()
+	if !stop {
+		t.Errorf("pre reset should stop")
+	}
+
+	// reset it and verify that we repeat the above
+	maxRetriesB.Reset()
+
+	for _, tc := range expected {
+		val, stop := maxRetriesB.Next()
+		if stop {
+			t.Errorf("post reset should not stop")
+		}
+		if val != tc {
+			t.Errorf("post reset expected %v to be %v", val, tc)
+		}
+	}
+
+	// we again expect it to stop after the max number of retries
+	_, stop = maxRetriesB.Next()
+	if !stop {
+		t.Errorf("post reset should stop")
+	}
+}
+
 func validateMaxDuration(t *testing.T, b *ResettableBackoff, maxDuration time.Duration) {
 	t.Helper()
 
@@ -344,21 +421,4 @@ func validateMaxDuration(t *testing.T, b *ResettableBackoff, maxDuration time.Du
 	if val != 0 {
 		t.Errorf("expected %v to be %v", val, 0)
 	}
-}
-
-func TestResettableBackoff_WithMaxDuration(t *testing.T) {
-	t.Parallel()
-
-	baseDuration := 1 * time.Second
-	maxDuration := 250 * time.Millisecond
-	b := WithMaxDuration(maxDuration, BackoffFunc(func() (time.Duration, bool) {
-		return baseDuration, false
-	}))
-
-	validateMaxDuration(t, b, maxDuration)
-
-	// a reset should clear it, and we do the process again
-	b.reset()
-
-	validateMaxDuration(t, b, maxDuration)
 }

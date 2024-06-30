@@ -9,7 +9,6 @@ TODO:
 - update this documentation with changes
 - update Int63n to not panic?
 - add tests to rand.go
-- add test that adds a max duration and a capped #, resets, ensures both still hold
 - make rand its own package?
 
 ## Added features
