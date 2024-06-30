@@ -5,6 +5,7 @@
 Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
 
 TODO:
+- make a repeat_utils and retry_utils that includes stuff like ConstantRepeat and such, along with tests (avoids import cycle i think)
 - update godoc to my version
 - update this documentation with changes
 - put unit tests in same package?
@@ -12,6 +13,7 @@ TODO:
 - figure out if we can delete stuff (eg Constant() and the TODOs around that sort of function)
 - validate tests in retry.go, see if anything should be added to that or repeat.go
 - add tests to rand.go
+- add test that adds a max duration and a capped #, resets, ensures both still hold
 - make rand its own package?
 
 ## Added features

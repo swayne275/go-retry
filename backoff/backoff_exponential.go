@@ -16,10 +16,10 @@ type exponentialBackoff struct {
 	attempt uint64
 }
 
-// Exponential is a wrapper around Retry that uses an exponential backoff. See
+// ExponentialRetry is a wrapper around retry that uses an exponential backoff. See
 // NewExponential.
 // TODO is this useful or fine as an example?
-func Exponential(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
+func ExponentialRetry(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
 	b, err := NewExponential(base)
 	if err != nil {
 		return fmt.Errorf("failed to create exponential backoff: %w", err)

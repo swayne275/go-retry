@@ -47,6 +47,9 @@ func TestDo(t *testing.T) {
 		if err = Do(context.Background(), b, retryFunc); err != errFunctionSignaledToStop {
 			t.Errorf("expected %q to be %q", err, errFunctionSignaledToStop)
 		}
+		if cnt != maxCnt+1 {
+			t.Errorf("expected %d to be %d", cnt, maxCnt+1)
+		}
 	})
 
 	t.Run("exit_on_backoff_stop", func(t *testing.T) {
@@ -99,9 +102,11 @@ func TestDoUntilError(t *testing.T) {
 			return nil
 		}
 
-		// TODO figure out error return here
 		if err = DoUntilError(context.Background(), b, retryFunc); !errors.Is(err, errFunctionSignaledToStop) {
 			t.Errorf("expected %q to contain %q", err, errFunctionSignaledToStop)
+		}
+		if cnt != maxCnt+1 {
+			t.Errorf("expected %d to be %d", cnt, maxCnt+1)
 		}
 	})
 

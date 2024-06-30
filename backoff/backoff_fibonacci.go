@@ -19,10 +19,10 @@ type fibonacciBackoff struct {
 	base  time.Duration
 }
 
-// Fibonacci is a wrapper around Retry that uses a Fibonacci backoff. See
+// FibonacciRetry is a wrapper around retry that uses a FibonacciRetry backoff. See
 // NewFibonacci.
 // TODO is this useful or should we move to example?
-func Fibonacci(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
+func FibonacciRetry(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
 	b, err := NewFibonacci(base)
 	if err != nil {
 		return fmt.Errorf("failed to create fibonacci backoff: %w", err)
