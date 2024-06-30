@@ -3,6 +3,7 @@ package example
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/swayne275/go-retry/backoff"
@@ -178,4 +179,58 @@ func ExampleNewFibonacci() {
 	// 3s
 	// 5s
 	// 8s
+}
+
+func ExampleDo_simple() {
+	ctx := context.Background()
+
+	b, err := backoff.NewFibonacci(1 * time.Nanosecond)
+	if err != nil {
+		// handle error
+	}
+
+	i := 0
+	if err := retry.Do(ctx, backoff.WithMaxRetries(3, b), func(ctx context.Context) error {
+		fmt.Printf("%d\n", i)
+		i++
+		return retry.RetryableError(fmt.Errorf("oops"))
+	}); err != nil {
+		// handle error
+	}
+
+	// Output:
+	// 0
+	// 1
+	// 2
+	// 3
+}
+
+func ExampleDo_customRetry() {
+	ctx := context.Background()
+
+	b, err := backoff.NewFibonacci(1 * time.Nanosecond)
+	if err != nil {
+		// handle error
+	}
+
+	// This example demonstrates selectively retrying specific errors. Only errors
+	// wrapped with RetryableError are eligible to be retried.
+	if err := retry.Do(ctx, backoff.WithMaxRetries(3, b), func(ctx context.Context) error {
+		resp, err := http.Get("https://google.com/")
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		switch resp.StatusCode / 100 {
+		case 4:
+			return fmt.Errorf("bad response: %v", resp.StatusCode)
+		case 5:
+			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
+		default:
+			return nil
+		}
+	}); err != nil {
+		// handle error
+	}
 }

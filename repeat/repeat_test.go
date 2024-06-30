@@ -14,6 +14,8 @@ func TestDo(t *testing.T) {
 	t.Parallel()
 
 	t.Run("exit_on_context_cancelled", func(t *testing.T) {
+		t.Parallel()
+
 		b, err := backoff.NewConstant(1 * time.Nanosecond)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)
@@ -32,6 +34,8 @@ func TestDo(t *testing.T) {
 	})
 
 	t.Run("exit_on_RepeatFunc_false", func(t *testing.T) {
+		t.Parallel()
+
 		b, err := backoff.NewConstant(1 * time.Nanosecond)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)
@@ -53,6 +57,8 @@ func TestDo(t *testing.T) {
 	})
 
 	t.Run("exit_on_backoff_stop", func(t *testing.T) {
+		t.Parallel()
+
 		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
@@ -69,6 +75,8 @@ func TestDoUntilError(t *testing.T) {
 	t.Parallel()
 
 	t.Run("exit_on_context_cancelled", func(t *testing.T) {
+		t.Parallel()
+
 		b, err := backoff.NewConstant(1 * time.Nanosecond)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)
@@ -87,6 +95,8 @@ func TestDoUntilError(t *testing.T) {
 	})
 
 	t.Run("exit_on_RepeatFunc_error", func(t *testing.T) {
+		t.Parallel()
+
 		b, err := backoff.NewConstant(1 * time.Nanosecond)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)
@@ -111,6 +121,8 @@ func TestDoUntilError(t *testing.T) {
 	})
 
 	t.Run("exit_on_backoff_stop", func(t *testing.T) {
+		t.Parallel()
+
 		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))

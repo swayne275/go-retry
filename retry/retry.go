@@ -22,8 +22,6 @@ import (
 )
 
 var errFunctionReturnedNonRetryableError = fmt.Errorf("function returned non retryable error")
-
-// TODO do we need to write a test for this case
 var errBackoffSignaledToStop = fmt.Errorf("backoff signaled to stop")
 
 // RetryFunc is a function passed to retry.
