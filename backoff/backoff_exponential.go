@@ -1,31 +1,17 @@
 package backoff
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"sync/atomic"
 	"time"
 
 	"github.com/swayne275/go-retry/common/backoff"
-	"github.com/swayne275/go-retry/retry"
 )
 
 type exponentialBackoff struct {
 	base    time.Duration
 	attempt uint64
-}
-
-// ExponentialRetry is a wrapper around retry that uses an exponential backoff. See
-// NewExponential.
-// TODO is this useful or fine as an example?
-func ExponentialRetry(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
-	b, err := NewExponential(base)
-	if err != nil {
-		return fmt.Errorf("failed to create exponential backoff: %w", err)
-	}
-
-	return retry.Do(ctx, b, f)
 }
 
 // NewExponential creates a new exponential backoff using the starting value of

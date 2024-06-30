@@ -1,7 +1,6 @@
 package backoff
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"sync/atomic"
@@ -9,7 +8,6 @@ import (
 	"unsafe"
 
 	"github.com/swayne275/go-retry/common/backoff"
-	"github.com/swayne275/go-retry/retry"
 )
 
 type state [2]time.Duration
@@ -17,18 +15,6 @@ type state [2]time.Duration
 type fibonacciBackoff struct {
 	state unsafe.Pointer
 	base  time.Duration
-}
-
-// FibonacciRetry is a wrapper around retry that uses a FibonacciRetry backoff. See
-// NewFibonacci.
-// TODO is this useful or should we move to example?
-func FibonacciRetry(ctx context.Context, base time.Duration, f retry.RetryFunc) error {
-	b, err := NewFibonacci(base)
-	if err != nil {
-		return fmt.Errorf("failed to create fibonacci backoff: %w", err)
-
-	}
-	return retry.Do(ctx, b, f)
 }
 
 // NewFibonacci creates a new Fibonacci backoff that follows the fibonacci sequence
