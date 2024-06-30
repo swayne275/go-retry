@@ -7,7 +7,6 @@ Builds off of the wonderful work of https://github.com/sethvargo/go-retry but ad
 TODO:
 - update godoc to my version
 - update this documentation with changes
-- put unit tests in same package?
 - update Int63n to not panic?
 - add tests to rand.go
 - add test that adds a max duration and a capped #, resets, ensures both still hold
