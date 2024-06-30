@@ -19,12 +19,12 @@ func TestDo(t *testing.T) {
 			t.Fatalf("failed to create constant backoff: %v", err)
 		}
 
-		ctx, cancelFunc := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
 		retryFunc := func(_ context.Context) bool { return true }
 
 		go func() {
 			time.Sleep(10 * time.Nanosecond)
-			cancelFunc()
+			cancel()
 		}()
 		if err = Do(ctx, b, retryFunc); err != context.Canceled {
 			t.Errorf("expected %q to be %q", err, context.Canceled)
@@ -74,12 +74,12 @@ func TestDoUntilError(t *testing.T) {
 			t.Fatalf("failed to create constant backoff: %v", err)
 		}
 
-		ctx, cancelFunc := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
 		retryFunc := func(_ context.Context) error { return nil }
 
 		go func() {
 			time.Sleep(10 * time.Nanosecond)
-			cancelFunc()
+			cancel()
 		}()
 		if err = DoUntilError(ctx, b, retryFunc); err != context.Canceled {
 			t.Errorf("expected %q to be %q", err, context.Canceled)

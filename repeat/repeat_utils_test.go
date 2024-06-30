@@ -16,7 +16,6 @@ func TestConstantRepeat(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			time.Sleep(10 * time.Nanosecond)
-			// TODO update cancelFunc -> cancel naming
 			cancel()
 		}()
 
@@ -55,7 +54,6 @@ func TestExponentialRepeat(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			time.Sleep(10 * time.Nanosecond)
-			// TODO update cancelFunc -> cancel naming
 			cancel()
 		}()
 
@@ -94,7 +92,6 @@ func TestFibonacciRepeat(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			time.Sleep(10 * time.Nanosecond)
-			// TODO update cancelFunc -> cancel naming
 			cancel()
 		}()
 
