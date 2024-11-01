@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/swayne275/go-retry/common/backoff"
+	"github.com/swayne275/go-retry/backoff"
 )
 
 var errFunctionSignaledToStop = fmt.Errorf("function signaled to stop")

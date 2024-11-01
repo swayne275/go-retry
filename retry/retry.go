@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/swayne275/go-retry/common/backoff"
+	"github.com/swayne275/go-retry/backoff"
 )
 
 var errFunctionReturnedNonRetryableError = fmt.Errorf("function returned non retryable error")

@@ -6,8 +6,6 @@ import (
 	"sort"
 	"testing"
 	"time"
-
-	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestFibonacciBackoff(t *testing.T) {
@@ -145,7 +143,7 @@ func TestFibonacciBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	resettableB := WithReset(func() cb.Backoff {
+	resettableB := WithReset(func() Backoff {
 		newB, err := NewFibonacci(base)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
@@ -196,7 +194,7 @@ func TestFibonacciBackoff_WithReset_ChangeBase(t *testing.T) {
 		10 * time.Second,
 		16 * time.Second,
 	}
-	resettableB := WithReset(func() cb.Backoff {
+	resettableB := WithReset(func() Backoff {
 		newB, err := NewFibonacci(newBase)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
@@ -270,7 +268,7 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		8 * time.Second,
 	}
 
-	resettableB := WithReset(func() cb.Backoff {
+	resettableB := WithReset(func() Backoff {
 		// don't set a cap on the explicit reset
 		newB, err := NewFibonacci(base)
 		if err != nil {

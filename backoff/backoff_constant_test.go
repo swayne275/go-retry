@@ -5,8 +5,6 @@ import (
 	"sort"
 	"testing"
 	"time"
-
-	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestConstantBackoff(t *testing.T) {
@@ -118,7 +116,7 @@ func TestConstantBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create constant backoff: %v", err)
 	}
 
-	resettableB := WithReset(func() cb.Backoff {
+	resettableB := WithReset(func() Backoff {
 		return b
 	}, b)
 	resettableB.Reset()
@@ -171,7 +169,7 @@ func TestConstantBackoff_ExplicitReset(t *testing.T) {
 	// now we're going to explicitly pass in a reset function that DOES NOT observe the cap,
 	// and we expect the reset to no longer have the cap
 
-	explicitylyResettableB := WithReset(func() cb.Backoff {
+	explicitylyResettableB := WithReset(func() Backoff {
 		b, err := NewConstant(expectedDuration)
 		if err != nil {
 			t.Fatalf("failed to create constant backoff: %v", err)

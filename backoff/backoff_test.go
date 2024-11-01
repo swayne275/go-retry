@@ -3,8 +3,6 @@ package backoff
 import (
 	"testing"
 	"time"
-
-	"github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestWithJitter(t *testing.T) {
@@ -131,7 +129,7 @@ func TestWithMaxDuration(t *testing.T) {
 
 func TestResettableBackoff(t *testing.T) {
 	var attempt uint64
-	b := WithReset(func() backoff.Backoff {
+	b := WithReset(func() Backoff {
 		attempt = 0
 
 		return BackoffFunc(func() (time.Duration, bool) {

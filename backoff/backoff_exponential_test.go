@@ -6,8 +6,6 @@ import (
 	"sort"
 	"testing"
 	"time"
-
-	cb "github.com/swayne275/go-retry/common/backoff"
 )
 
 func TestExponentialBackoff(t *testing.T) {
@@ -131,7 +129,7 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create exponential backoff: %v", err)
 	}
 
-	resettableB := WithReset(func() cb.Backoff {
+	resettableB := WithReset(func() Backoff {
 		newB, err := NewExponential(base)
 		if err != nil {
 			t.Fatalf("failed to reset exponential backoff: %v", err)
@@ -200,7 +198,7 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		4 * time.Second,
 		8 * time.Second,
 	}
-	resettableB := WithReset(func() cb.Backoff {
+	resettableB := WithReset(func() Backoff {
 		// don't set a cap on the explicit reset
 		newB, err := NewExponential(base)
 		if err != nil {
