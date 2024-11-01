@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/swayne275/go-retry/internal/random"
 )
 
 // TODO clean up interface, struct, etc
@@ -69,7 +71,7 @@ func WithJitter(j time.Duration, next Backoff) (*ResettableBackoff, error) {
 		return nil, ErrInvalidJitter
 	}
 
-	r := newLockedRandom(time.Now().UnixNano())
+	r := random.NewLockedRandom(time.Now().UnixNano())
 
 	nextWithJitter := BackoffFunc(func() (time.Duration, bool) {
 		val, stop := next.Next()
@@ -102,7 +104,7 @@ func WithJitterPercent(j uint64, next Backoff) (*ResettableBackoff, error) {
 		return nil, ErrInvalidJitterPercent
 	}
 
-	r := newLockedRandom(time.Now().UnixNano())
+	r := random.NewLockedRandom(time.Now().UnixNano())
 
 	nextWithJitterPercent := BackoffFunc(func() (time.Duration, bool) {
 		val, stop := next.Next()

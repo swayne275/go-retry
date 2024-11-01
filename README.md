@@ -7,8 +7,6 @@ Builds off of the wonderful work of https://github.com/sethvargo/go-retry but ad
 TODO:
 - update godoc to my version
 - update this documentation with changes
-- add tests to rand.go
-- make rand its own package?
 
 ## Added features
 
