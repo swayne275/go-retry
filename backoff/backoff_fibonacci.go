@@ -6,8 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
-
-	"github.com/swayne275/go-retry/common/backoff"
 )
 
 type state [2]time.Duration
@@ -25,7 +23,7 @@ type fibonacciBackoff struct {
 // for a 64-bit integer.
 //
 // It returns an error if the given base is less than zero.
-func NewFibonacci(base time.Duration) (backoff.Backoff, error) {
+func NewFibonacci(base time.Duration) (Backoff, error) {
 	if base <= 0 {
 		return nil, fmt.Errorf("base must be greater than 0")
 	}

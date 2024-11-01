@@ -177,7 +177,10 @@ func TestCancel(t *testing.T) {
 		b = backoff.WithMaxRetries(maxRetries, b)
 
 		const jitter time.Duration = 5 * time.Millisecond
-		b = backoff.WithJitter(jitter, b)
+		b, err = backoff.WithJitter(jitter, b)
+		if err != nil {
+			t.Fatalf("failed to add jitter: %v", err)
+		}
 
 		// Here we cancel the Context *before* the call to Do
 		cancel()

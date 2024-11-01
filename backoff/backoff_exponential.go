@@ -5,8 +5,6 @@ import (
 	"math"
 	"sync/atomic"
 	"time"
-
-	"github.com/swayne275/go-retry/common/backoff"
 )
 
 type exponentialBackoff struct {
@@ -21,7 +19,7 @@ type exponentialBackoff struct {
 // for a 64-bit integer.
 //
 // It returns an error if the given base is less than zero.
-func NewExponential(base time.Duration) (backoff.Backoff, error) {
+func NewExponential(base time.Duration) (Backoff, error) {
 	if base <= 0 {
 		return nil, fmt.Errorf("base must be greater than 0")
 	}

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/swayne275/go-retry/backoff"
-	cb "github.com/swayne275/go-retry/common/backoff"
 	"github.com/swayne275/go-retry/retry"
 )
 
@@ -15,7 +14,7 @@ func ExampleBackoffFunc() {
 	ctx := context.Background()
 
 	// Example backoff middleware that adds the provided duration t to the result.
-	withShift := func(t time.Duration, next cb.Backoff) backoff.BackoffFunc {
+	withShift := func(t time.Duration, next backoff.Backoff) backoff.BackoffFunc {
 		return func() (time.Duration, bool) {
 			val, stop := next.Next()
 			if stop {
@@ -47,7 +46,10 @@ func ExampleWithJitter() {
 	if err != nil {
 		// handle the error here, likely from bad input
 	}
-	b = backoff.WithJitter(1*time.Second, b)
+	b, err = backoff.WithJitter(1*time.Second, b)
+	if err != nil {
+		// handle the error here, likely from bad input
+	}
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -64,7 +66,10 @@ func ExampleWithJitterPercent() {
 	if err != nil {
 		// handle err
 	}
-	b = backoff.WithJitterPercent(5, b)
+	b, err = backoff.WithJitterPercent(5, b)
+	if err != nil {
+		// handle the error here, likely from bad input
+	}
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
