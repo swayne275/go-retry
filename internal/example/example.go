@@ -46,7 +46,10 @@ func ExampleWithJitter() {
 	if err != nil {
 		// handle the error here, likely from bad input
 	}
-	b = backoff.WithJitter(1*time.Second, b)
+	b, err = backoff.WithJitter(1*time.Second, b)
+	if err != nil {
+		// handle the error here, likely from bad input
+	}
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here
@@ -63,7 +66,10 @@ func ExampleWithJitterPercent() {
 	if err != nil {
 		// handle err
 	}
-	b = backoff.WithJitterPercent(5, b)
+	b, err = backoff.WithJitterPercent(5, b)
+	if err != nil {
+		// handle the error here, likely from bad input
+	}
 
 	if err := retry.Do(ctx, b, func(_ context.Context) error {
 		// your retry logic here

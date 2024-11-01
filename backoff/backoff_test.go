@@ -5,6 +5,38 @@ import (
 	"time"
 )
 
+func TestWithJitter_BadValues(t *testing.T) {
+	t.Parallel()
+
+	t.Run("jitter is negative", func(t *testing.T) {
+		backoffJitter := -1 * time.Millisecond
+		_, err := WithJitter(backoffJitter, BackoffFunc(func() (time.Duration, bool) {
+			return 0, false
+		}))
+		if err == nil {
+			t.Error("expected error, got none")
+		}
+
+		if err != ErrInvalidJitter {
+			t.Errorf("expected %v, got %v", ErrInvalidJitter, err)
+		}
+	})
+
+	t.Run("jitter is zero", func(t *testing.T) {
+		backoffJitter := 0 * time.Millisecond
+		_, err := WithJitter(backoffJitter, BackoffFunc(func() (time.Duration, bool) {
+			return 0, false
+		}))
+		if err == nil {
+			t.Error("expected error, got none")
+		}
+
+		if err != ErrInvalidJitter {
+			t.Errorf("expected %v, got %v", ErrInvalidJitter, err)
+		}
+	})
+}
+
 func TestWithJitter(t *testing.T) {
 	t.Parallel()
 
@@ -13,9 +45,13 @@ func TestWithJitter(t *testing.T) {
 
 	sawJitter := false
 	for i := 0; i < 100_000; i++ {
-		b := WithJitter(backoffJitter, BackoffFunc(func() (time.Duration, bool) {
+		b, err := WithJitter(backoffJitter, BackoffFunc(func() (time.Duration, bool) {
 			return baseDuration, false
 		}))
+		if err != nil {
+			t.Fatalf("failed to create backoff with jitter: %v", err)
+		}
+
 		val, stop := b.Next()
 		if stop {
 			t.Errorf("should not stop")
@@ -35,6 +71,38 @@ func TestWithJitter(t *testing.T) {
 	}
 }
 
+func TestWithJitterPercent_BadValues(t *testing.T) {
+	t.Parallel()
+
+	t.Run("jitter is 0", func(t *testing.T) {
+		backoffJitterPercent := uint64(0)
+		_, err := WithJitterPercent(backoffJitterPercent, BackoffFunc(func() (time.Duration, bool) {
+			return 0, false
+		}))
+		if err == nil {
+			t.Error("expected error, got none")
+		}
+
+		if err != ErrInvalidJitterPercent {
+			t.Errorf("expected %v, got %v", ErrInvalidJitterPercent, err)
+		}
+	})
+
+	t.Run("jitter is >100", func(t *testing.T) {
+		backoffJitterPercent := uint64(101)
+		_, err := WithJitterPercent(backoffJitterPercent, BackoffFunc(func() (time.Duration, bool) {
+			return 0, false
+		}))
+		if err == nil {
+			t.Error("expected error, got none")
+		}
+
+		if err != ErrInvalidJitterPercent {
+			t.Errorf("expected %v, got %v", ErrInvalidJitterPercent, err)
+		}
+	})
+}
+
 func TestWithJitterPercent(t *testing.T) {
 	t.Parallel()
 
@@ -45,9 +113,13 @@ func TestWithJitterPercent(t *testing.T) {
 
 	sawJitter := false
 	for i := 0; i < 100_000; i++ {
-		b := WithJitterPercent(jitterPercent, BackoffFunc(func() (time.Duration, bool) {
+		b, err := WithJitterPercent(jitterPercent, BackoffFunc(func() (time.Duration, bool) {
 			return baseDuration, false
 		}))
+		if err != nil {
+			t.Fatalf("failed to create backoff with jitter percent: %v", err)
+		}
+
 		val, stop := b.Next()
 		if stop {
 			t.Errorf("should not stop")
@@ -170,9 +242,12 @@ func TestResettableBackoff_WithJitter(t *testing.T) {
 
 	baseDuration := 1 * time.Second
 	jitterDuration := 1 * time.Second
-	b := WithJitter(jitterDuration, BackoffFunc(func() (time.Duration, bool) {
+	b, err := WithJitter(jitterDuration, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
+	if err != nil {
+		t.Fatalf("failed to create backoff with jitter: %v", err)
+	}
 
 	// reset it and verify that we are still within the jitter range
 	b.reset()
@@ -204,9 +279,12 @@ func TestResettableBackoff_WithJitterPercent(t *testing.T) {
 	jitterPercent := uint64(5)
 	minBackoff := time.Duration(100-jitterPercent) * baseDuration / 100
 	maxBackoff := time.Duration(100+jitterPercent) * baseDuration / 100
-	b := WithJitterPercent(jitterPercent, BackoffFunc(func() (time.Duration, bool) {
+	b, err := WithJitterPercent(jitterPercent, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
+	if err != nil {
+		t.Fatalf("failed to create backoff with jitter percent: %v", err)
+	}
 
 	// reset it and verify that we are still within the jitter range
 	b.reset()

@@ -7,7 +7,6 @@ Builds off of the wonderful work of https://github.com/sethvargo/go-retry but ad
 TODO:
 - update godoc to my version
 - update this documentation with changes
-- update Int63n to not panic?
 - add tests to rand.go
 - make rand its own package?
 
@@ -142,10 +141,10 @@ value.
 b, err := NewFibonacci(1 * time.Second)
 
 // Return the next value, +/- 500ms
-b = WithJitter(500*time.Millisecond, b)
+b, err = WithJitter(500*time.Millisecond, b)
 
 // Return the next value, +/- 5% of the result
-b = WithJitterPercent(5, b)
+b, err = WithJitterPercent(5, b)
 ```
 
 ### MaxRetries

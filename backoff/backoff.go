@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -14,6 +15,13 @@ type Backoff interface {
 	// Reset sets the undecorated backoff back to its initial parameters
 	Reset()
 }
+
+var (
+	// ErrInvalidJitter is returned when the jitter is invalid.
+	ErrInvalidJitter = fmt.Errorf("invalid jitter: must be a positive value")
+	// ErrInvalidJitterPercent is returned when the jitter percent is invalid.
+	ErrInvalidJitterPercent = fmt.Errorf("invalid jitter percent: must be > 0 and <= 100")
+)
 
 var _ Backoff = (BackoffFunc)(nil)
 
@@ -54,9 +62,13 @@ func WithReset(reset func() Backoff, next Backoff) *ResettableBackoff {
 
 // WithJitter wraps a backoff function and adds the specified jitter. j can be
 // interpreted as "+/- j". For example, if j were 5 seconds and the backoff
-// returned 20s, the value could be between 15 and 25 seconds. The value can
-// never be less than 0.
-func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
+// returned 20s, the value could be between 15 and 25 seconds. The value must
+// be greater than 0.
+func WithJitter(j time.Duration, next Backoff) (*ResettableBackoff, error) {
+	if j <= 0 {
+		return nil, ErrInvalidJitter
+	}
+
 	r := newLockedRandom(time.Now().UnixNano())
 
 	nextWithJitter := BackoffFunc(func() (time.Duration, bool) {
@@ -78,14 +90,18 @@ func WithJitter(j time.Duration, next Backoff) *ResettableBackoff {
 		return nextWithJitter
 	}
 
-	return WithReset(reset, nextWithJitter)
+	return WithReset(reset, nextWithJitter), nil
 }
 
 // WithJitterPercent wraps a backoff function and adds the specified jitter
 // percentage. j can be interpreted as "+/- j%". For example, if j were 5 and
 // the backoff returned 20s, the value could be between 19 and 21 seconds. The
-// value can never be less than 0 or greater than 100.
-func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
+// value can never be less than 1 or greater than 100.
+func WithJitterPercent(j uint64, next Backoff) (*ResettableBackoff, error) {
+	if j <= 0 || j > 100 {
+		return nil, ErrInvalidJitterPercent
+	}
+
 	r := newLockedRandom(time.Now().UnixNano())
 
 	nextWithJitterPercent := BackoffFunc(func() (time.Duration, bool) {
@@ -110,7 +126,7 @@ func WithJitterPercent(j uint64, next Backoff) *ResettableBackoff {
 		return nextWithJitterPercent
 	}
 
-	return WithReset(reset, nextWithJitterPercent)
+	return WithReset(reset, nextWithJitterPercent), nil
 }
 
 // WithMaxRetries executes the backoff function up until the maximum attempts.
