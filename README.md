@@ -7,7 +7,6 @@ Builds off of the wonderful work of https://github.com/sethvargo/go-retry but ad
 TODO:
 - update godoc to my version
 - update this documentation with changes
-- consider taking context for deadline based backoffs
 - consider improving examples that have like b := so users know what they are
 
 ## Added features

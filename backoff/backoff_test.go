@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -197,6 +198,31 @@ func TestWithMaxDuration(t *testing.T) {
 	}))
 
 	validateMaxDuration(t, b, maxDuration)
+}
+
+func TestWithContext(t *testing.T) {
+	t.Parallel()
+
+	baseDuration := 2 * time.Second
+	ctx, cancel := context.WithCancel(context.Background())
+
+	b := WithContext(ctx, BackoffFunc(func() (time.Duration, bool) {
+		return baseDuration, false
+	}))
+
+	val, stop := b.Next()
+	if stop {
+		t.Errorf("should not stop")
+	}
+	if val != baseDuration {
+		t.Errorf("expected %v to be %v", val, baseDuration)
+	}
+
+	cancel()
+	_, stop = b.Next()
+	if !stop {
+		t.Errorf("should stop after context cancel")
+	}
 }
 
 func TestResettableBackoff(t *testing.T) {

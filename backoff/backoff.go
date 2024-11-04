@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -227,4 +228,16 @@ func WithMaxDuration(timeout time.Duration, next Backoff) *ResettableBackoff {
 	}
 
 	return WithReset(reset, nextWithMaxDuration)
+}
+
+// WithContext creates a Backoff that stops if the context is done.
+func WithContext(ctx context.Context, next Backoff) Backoff {
+	return BackoffFunc(func() (time.Duration, bool) {
+		select {
+		case <-ctx.Done():
+			return 0, true
+		default:
+			return next.Next()
+		}
+	})
 }
