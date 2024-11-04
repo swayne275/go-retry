@@ -143,7 +143,7 @@ func TestFibonacciBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	resettableB := WithReset(func() Backoff {
+	resettableBackoff := WithReset(func() Backoff {
 		newB, err := NewFibonacci(base)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
@@ -154,16 +154,16 @@ func TestFibonacciBackoff_WithReset(t *testing.T) {
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expected[i] {
 			t.Errorf("pre reset: expected %v to be %v", val, expected[i])
 		}
 	}
 
 	// test post reset. since we reset we expect the same sequence of values as before
-	resettableB.Reset()
+	resettableBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expected[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expected[i])
 		}
@@ -194,7 +194,7 @@ func TestFibonacciBackoff_WithReset_ChangeBase(t *testing.T) {
 		10 * time.Second,
 		16 * time.Second,
 	}
-	resettableB := WithReset(func() Backoff {
+	resettableBackoff := WithReset(func() Backoff {
 		newB, err := NewFibonacci(newBase)
 		if err != nil {
 			t.Fatalf("failed to reset fibonacci backoff: %v", err)
@@ -205,16 +205,16 @@ func TestFibonacciBackoff_WithReset_ChangeBase(t *testing.T) {
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expected[i] {
 			t.Errorf("pre reset: expected %v to be %v", val, expected[i])
 		}
 	}
 
 	// test post reset. since we reset with a new base we expect new values
-	resettableB.Reset()
+	resettableBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != newExpected[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expected[i])
 		}
@@ -238,11 +238,11 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	cappedB := WithCappedDuration(cappedDuration, b)
+	cappedBackoff := WithCappedDuration(cappedDuration, b)
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
-		val, _ := cappedB.Next()
+		val, _ := cappedBackoff.Next()
 		if val != expectedCapped[i] {
 			t.Errorf("pre reset: expected %v to be %v", val, expectedCapped[i])
 		}
@@ -250,9 +250,9 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 
 	// test post reset. since we reset we expect the same sequence of values as before
 	// and the cap should still be applied.
-	cappedB.Reset()
+	cappedBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := cappedB.Next()
+		val, _ := cappedBackoff.Next()
 		if val != expectedCapped[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expectedCapped[i])
 		}
@@ -268,7 +268,7 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		8 * time.Second,
 	}
 
-	resettableB := WithReset(func() Backoff {
+	resettableBackoff := WithReset(func() Backoff {
 		// don't set a cap on the explicit reset
 		newB, err := NewFibonacci(base)
 		if err != nil {
@@ -276,11 +276,11 @@ func TestFibonacciBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		}
 
 		return newB
-	}, cappedB)
+	}, cappedBackoff)
 
-	resettableB.Reset()
+	resettableBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expectedAfterExplicitReset[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expectedAfterExplicitReset[i])
 		}

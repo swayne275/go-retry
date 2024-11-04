@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -144,13 +145,13 @@ func TestWithMaxRetries(t *testing.T) {
 
 	baseDuration := 1 * time.Second
 	maxRetries := uint64(3)
-	b := WithMaxRetries(maxRetries, BackoffFunc(func() (time.Duration, bool) {
+	backoff := WithMaxRetries(maxRetries, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
 
 	// First 3 attempts succeed
 	for i := uint64(0); i < maxRetries; i++ {
-		val, stop := b.Next()
+		val, stop := backoff.Next()
 		if stop {
 			t.Errorf("should not stop")
 		}
@@ -160,7 +161,7 @@ func TestWithMaxRetries(t *testing.T) {
 	}
 
 	// Now we stop
-	val, stop := b.Next()
+	val, stop := backoff.Next()
 	if !stop {
 		t.Errorf("should stop")
 	}
@@ -174,11 +175,11 @@ func TestWithCappedDuration(t *testing.T) {
 
 	baseDuration := 5 * time.Second
 	cappedDuration := 3 * time.Second
-	b := WithCappedDuration(cappedDuration, BackoffFunc(func() (time.Duration, bool) {
+	backoff := WithCappedDuration(cappedDuration, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
 
-	val, stop := b.Next()
+	val, stop := backoff.Next()
 	if stop {
 		t.Errorf("should not stop")
 	}
@@ -192,16 +193,41 @@ func TestWithMaxDuration(t *testing.T) {
 
 	baseDuration := 1 * time.Second
 	maxDuration := 250 * time.Millisecond
-	b := WithMaxDuration(maxDuration, BackoffFunc(func() (time.Duration, bool) {
+	backoff := WithMaxDuration(maxDuration, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
 
-	validateMaxDuration(t, b, maxDuration)
+	validateMaxDuration(t, backoff, maxDuration)
+}
+
+func TestWithContext(t *testing.T) {
+	t.Parallel()
+
+	baseDuration := 2 * time.Second
+	ctx, cancel := context.WithCancel(context.Background())
+
+	backoff := WithContext(ctx, BackoffFunc(func() (time.Duration, bool) {
+		return baseDuration, false
+	}))
+
+	val, stop := backoff.Next()
+	if stop {
+		t.Errorf("should not stop")
+	}
+	if val != baseDuration {
+		t.Errorf("expected %v to be %v", val, baseDuration)
+	}
+
+	cancel()
+	_, stop = backoff.Next()
+	if !stop {
+		t.Errorf("should stop after context cancel")
+	}
 }
 
 func TestResettableBackoff(t *testing.T) {
 	var attempt uint64
-	b := WithReset(func() Backoff {
+	backoff := WithReset(func() Backoff {
 		attempt = 0
 
 		return BackoffFunc(func() (time.Duration, bool) {
@@ -215,7 +241,7 @@ func TestResettableBackoff(t *testing.T) {
 
 	// Call Next a few times
 	for i := 0; i < 3; i++ {
-		val, stop := b.Next()
+		val, stop := backoff.Next()
 		if stop {
 			t.Fatal("should not stop")
 		}
@@ -225,10 +251,10 @@ func TestResettableBackoff(t *testing.T) {
 	}
 
 	// Reset the backoff
-	b.Reset()
+	backoff.Reset()
 
 	// Call Next again and verify that the state has been reset
-	val, stop := b.Next()
+	val, stop := backoff.Next()
 	if stop {
 		t.Fatal("should not stop after reset")
 	}
@@ -314,13 +340,13 @@ func TestResettableBackoff_WithMaxRetries(t *testing.T) {
 
 	baseDuration := 1 * time.Second
 	maxRetries := uint64(3)
-	b := WithMaxRetries(maxRetries, BackoffFunc(func() (time.Duration, bool) {
+	backoff := WithMaxRetries(maxRetries, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
 
 	// First 3 attempts succeed
 	for i := uint64(0); i < maxRetries; i++ {
-		val, stop := b.Next()
+		val, stop := backoff.Next()
 		if stop {
 			t.Errorf("should not stop")
 		}
@@ -329,11 +355,11 @@ func TestResettableBackoff_WithMaxRetries(t *testing.T) {
 		}
 	}
 
-	b.reset()
+	backoff.reset()
 
 	// reset - should get 3 more succeessful attempts
 	for i := uint64(0); i < maxRetries; i++ {
-		val, stop := b.Next()
+		val, stop := backoff.Next()
 		if stop {
 			t.Errorf("should not stop after reset")
 		}
@@ -343,7 +369,7 @@ func TestResettableBackoff_WithMaxRetries(t *testing.T) {
 	}
 
 	// Now we stop
-	val, stop := b.Next()
+	val, stop := backoff.Next()
 	if !stop {
 		t.Errorf("should stop")
 	}
@@ -357,11 +383,11 @@ func TestResettableBackoff_WithCappedDuration(t *testing.T) {
 
 	baseDuration := 5 * time.Second
 	cappedDuration := 3 * time.Second
-	b := WithCappedDuration(cappedDuration, BackoffFunc(func() (time.Duration, bool) {
+	backoff := WithCappedDuration(cappedDuration, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
 
-	val, stop := b.Next()
+	val, stop := backoff.Next()
 	if stop {
 		t.Errorf("should not stop")
 	}
@@ -370,9 +396,9 @@ func TestResettableBackoff_WithCappedDuration(t *testing.T) {
 	}
 
 	// verify that we still have cappedDuration after a reset
-	b.reset()
+	backoff.reset()
 
-	val, stop = b.Next()
+	val, stop = backoff.Next()
 	if stop {
 		t.Errorf("should not stop")
 	}
@@ -386,16 +412,16 @@ func TestResettableBackoff_WithMaxDuration(t *testing.T) {
 
 	baseDuration := 1 * time.Second
 	maxDuration := 250 * time.Millisecond
-	b := WithMaxDuration(maxDuration, BackoffFunc(func() (time.Duration, bool) {
+	backoff := WithMaxDuration(maxDuration, BackoffFunc(func() (time.Duration, bool) {
 		return baseDuration, false
 	}))
 
-	validateMaxDuration(t, b, maxDuration)
+	validateMaxDuration(t, backoff, maxDuration)
 
 	// a reset should clear it, and we do the process again
-	b.reset()
+	backoff.reset()
 
-	validateMaxDuration(t, b, maxDuration)
+	validateMaxDuration(t, backoff, maxDuration)
 }
 
 // TestResettableBackoff_MultipleDecorators ensures that multiple decorators can be applied to a ResettableBackoff
@@ -419,11 +445,11 @@ func TestResettableBackoff_MultipleDecorators(t *testing.T) {
 		t.Fatalf("failed to create fibonacci backoff: %v", err)
 	}
 
-	cappedB := WithCappedDuration(cappedDuration, b)
-	maxRetriesB := WithMaxRetries(maxRetries, cappedB)
+	cappedBackoff := WithCappedDuration(cappedDuration, b)
+	maxRetriesBackoff := WithMaxRetries(maxRetries, cappedBackoff)
 
 	for _, tc := range expected {
-		val, stop := maxRetriesB.Next()
+		val, stop := maxRetriesBackoff.Next()
 		if stop {
 			t.Errorf("pre reset should not stop")
 		}
@@ -433,16 +459,16 @@ func TestResettableBackoff_MultipleDecorators(t *testing.T) {
 	}
 
 	// we expect it to stop after the max number of retries
-	_, stop := maxRetriesB.Next()
+	_, stop := maxRetriesBackoff.Next()
 	if !stop {
 		t.Errorf("pre reset should stop")
 	}
 
 	// reset it and verify that we repeat the above
-	maxRetriesB.Reset()
+	maxRetriesBackoff.Reset()
 
 	for _, tc := range expected {
-		val, stop := maxRetriesB.Next()
+		val, stop := maxRetriesBackoff.Next()
 		if stop {
 			t.Errorf("post reset should not stop")
 		}
@@ -452,7 +478,7 @@ func TestResettableBackoff_MultipleDecorators(t *testing.T) {
 	}
 
 	// we again expect it to stop after the max number of retries
-	_, stop = maxRetriesB.Next()
+	_, stop = maxRetriesBackoff.Next()
 	if !stop {
 		t.Errorf("post reset should stop")
 	}

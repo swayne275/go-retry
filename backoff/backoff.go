@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -52,14 +53,14 @@ func (b *ResettableBackoff) Reset() {
 }
 
 func WithReset(reset func() Backoff, next Backoff) *ResettableBackoff {
-	rb := &ResettableBackoff{
+	resettableBackoff := &ResettableBackoff{
 		Backoff: next,
 	}
-	rb.reset = func() {
-		rb.Backoff = reset()
+	resettableBackoff.reset = func() {
+		resettableBackoff.Backoff = reset()
 	}
 
-	return rb
+	return resettableBackoff
 }
 
 // WithJitter wraps a backoff function and adds the specified jitter. j can be
@@ -227,4 +228,16 @@ func WithMaxDuration(timeout time.Duration, next Backoff) *ResettableBackoff {
 	}
 
 	return WithReset(reset, nextWithMaxDuration)
+}
+
+// WithContext creates a Backoff that stops if the context is done.
+func WithContext(ctx context.Context, next Backoff) Backoff {
+	return BackoffFunc(func() (time.Duration, bool) {
+		select {
+		case <-ctx.Done():
+			return 0, true
+		default:
+			return next.Next()
+		}
+	})
 }

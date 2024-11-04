@@ -130,6 +130,25 @@ func ExampleWithMaxDuration() {
 	}
 }
 
+func ExampleWithContext() {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// do something with the lifecylce of the context - stopping it makes backoff stop
+	defer cancel()
+
+	b, err := backoff.NewFibonacci(1 * time.Second)
+	if err != nil {
+		// handle err
+	}
+
+	if err := retry.Do(ctx, backoff.WithContext(ctx, b), func(_ context.Context) error {
+		// your retry logic here
+		return nil
+	}); err != nil {
+		// handle the error here
+	}
+}
+
 func ExampleNewConstant() {
 	b, err := backoff.NewConstant(1 * time.Second)
 	if err != nil {

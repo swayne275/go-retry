@@ -59,13 +59,13 @@ func TestDo(t *testing.T) {
 	t.Run("exit_on_backoff_stop", func(t *testing.T) {
 		t.Parallel()
 
-		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
+		backoff := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
 		retryFunc := func(_ context.Context) bool { return true }
 
-		if err := Do(context.Background(), b, retryFunc); err != errBackoffSignaledToStop {
+		if err := Do(context.Background(), backoff, retryFunc); err != errBackoffSignaledToStop {
 			t.Errorf("expected %q to be %q", err, errBackoffSignaledToStop)
 		}
 	})
@@ -123,13 +123,13 @@ func TestDoUntilError(t *testing.T) {
 	t.Run("exit_on_backoff_stop", func(t *testing.T) {
 		t.Parallel()
 
-		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
+		maxRetryBackoff := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
 		retryFunc := func(_ context.Context) error { return nil }
 
-		if err := DoUntilError(context.Background(), b, retryFunc); err != errBackoffSignaledToStop {
+		if err := DoUntilError(context.Background(), maxRetryBackoff, retryFunc); err != errBackoffSignaledToStop {
 			t.Errorf("expected %q to be %q", err, errBackoffSignaledToStop)
 		}
 	})

@@ -129,7 +129,7 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 		t.Fatalf("failed to create exponential backoff: %v", err)
 	}
 
-	resettableB := WithReset(func() Backoff {
+	resettableBackoff := WithReset(func() Backoff {
 		newB, err := NewExponential(base)
 		if err != nil {
 			t.Fatalf("failed to reset exponential backoff: %v", err)
@@ -140,16 +140,16 @@ func TestExponentialBackoff_WithReset(t *testing.T) {
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expected[i] {
 			t.Errorf("pre reset: expected %v to be %v", val, expected[i])
 		}
 	}
 
 	// test post reset. since we reset we expect the same sequence of values as before
-	resettableB.Reset()
+	resettableBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expected[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expected[i])
 		}
@@ -171,11 +171,11 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		t.Fatalf("failed to create exponential backoff: %v", err)
 	}
 
-	cappedB := WithCappedDuration(cappedDuration, b)
+	cappedBackoff := WithCappedDuration(cappedDuration, b)
 
 	// test pre reset
 	for i := 0; i < numRounds; i++ {
-		val, _ := cappedB.Next()
+		val, _ := cappedBackoff.Next()
 		if val != expectedCapped[i] {
 			t.Errorf("pre reset: expected %v to be %v", val, expectedCapped[i])
 		}
@@ -183,9 +183,9 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 
 	// test post reset. since we reset we expect the same sequence of values as before
 	// and the cap should still be applied.
-	cappedB.Reset()
+	cappedBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := cappedB.Next()
+		val, _ := cappedBackoff.Next()
 		if val != expectedCapped[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expectedCapped[i])
 		}
@@ -198,7 +198,7 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		4 * time.Second,
 		8 * time.Second,
 	}
-	resettableB := WithReset(func() Backoff {
+	resettableBackoff := WithReset(func() Backoff {
 		// don't set a cap on the explicit reset
 		newB, err := NewExponential(base)
 		if err != nil {
@@ -206,11 +206,11 @@ func TestExponentialBackoff_WithCappedDuration_WithReset(t *testing.T) {
 		}
 
 		return newB
-	}, cappedB)
+	}, cappedBackoff)
 
-	resettableB.Reset()
+	resettableBackoff.Reset()
 	for i := 0; i < numRounds; i++ {
-		val, _ := resettableB.Next()
+		val, _ := resettableBackoff.Next()
 		if val != expectedAfterExplicitReset[i] {
 			t.Errorf("post reset: expected %v to be %v", val, expectedAfterExplicitReset[i])
 		}
