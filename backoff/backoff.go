@@ -53,14 +53,14 @@ func (b *ResettableBackoff) Reset() {
 }
 
 func WithReset(reset func() Backoff, next Backoff) *ResettableBackoff {
-	rb := &ResettableBackoff{
+	resettableBackoff := &ResettableBackoff{
 		Backoff: next,
 	}
-	rb.reset = func() {
-		rb.Backoff = reset()
+	resettableBackoff.reset = func() {
+		resettableBackoff.Backoff = reset()
 	}
 
-	return rb
+	return resettableBackoff
 }
 
 // WithJitter wraps a backoff function and adds the specified jitter. j can be

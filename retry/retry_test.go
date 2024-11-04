@@ -28,12 +28,12 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
+		maxRetryBackoff := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
 		var i int
-		if err := Do(ctx, b, func(_ context.Context) error {
+		if err := Do(ctx, maxRetryBackoff, func(_ context.Context) error {
 			i++
 			return fmt.Errorf("oops") // not retryable
 		}); err == nil {
@@ -49,11 +49,11 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := backoff.WithMaxRetries(1, backoff.BackoffFunc(func() (time.Duration, bool) {
+		maxRetryBackoff := backoff.WithMaxRetries(1, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
-		err := Do(ctx, b, func(_ context.Context) error {
+		err := Do(ctx, maxRetryBackoff, func(_ context.Context) error {
 			return RetryableError(io.EOF)
 		})
 		if err == nil {
@@ -69,12 +69,12 @@ func TestDo(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
+		maxRetryBackoff := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
 		var i int
-		if err := Do(ctx, b, func(_ context.Context) error {
+		if err := Do(ctx, maxRetryBackoff, func(_ context.Context) error {
 			i++
 			return nil // no error
 		}); err != nil {
@@ -138,12 +138,12 @@ func TestDo(t *testing.T) {
 	t.Run("exit_on_backoff_stop", func(t *testing.T) {
 		t.Parallel()
 
-		b := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
+		maxRetryBackoff := backoff.WithMaxRetries(3, backoff.BackoffFunc(func() (time.Duration, bool) {
 			return 1 * time.Nanosecond, false
 		}))
 
 		errUnderlyingRetryable := RetryableError(fmt.Errorf("some retryable error"))
-		err := Do(context.Background(), b, func(_ context.Context) error {
+		err := Do(context.Background(), maxRetryBackoff, func(_ context.Context) error {
 			return RetryableError(errUnderlyingRetryable)
 		})
 		if !errors.Is(err, errBackoffSignaledToStop) {
