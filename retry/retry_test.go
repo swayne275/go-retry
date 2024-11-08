@@ -127,8 +127,8 @@ func TestDo(t *testing.T) {
 			return RetryableError(fmt.Errorf("some retryable error"))
 		}
 
-		if err = Do(context.Background(), b, retryFunc); !errors.Is(err, errFunctionReturnedNonRetryableError) {
-			t.Errorf("expected %q to contain %q", err, errFunctionReturnedNonRetryableError)
+		if err = Do(context.Background(), b, retryFunc); !errors.Is(err, ErrNonRetryable) {
+			t.Errorf("expected %q to contain %q", err, ErrNonRetryable)
 		}
 		if cnt != maxCnt+1 {
 			t.Errorf("expected %d to be %d", cnt, maxCnt+1)
@@ -190,4 +190,220 @@ func TestCancel(t *testing.T) {
 			t.Errorf("rf was called %d times instead of 0 or 1", calls)
 		}
 	}
+}
+
+func TestConstantRetry(t *testing.T) {
+	t.Parallel()
+
+	t.Run("exit_on_context_cancelled", func(t *testing.T) {
+		t.Parallel()
+
+		f := func(_ context.Context) error {
+			return RetryableError(fmt.Errorf("some retryable err"))
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			time.Sleep(10 * time.Nanosecond)
+			cancel()
+		}()
+
+		if err := ConstantRetry(ctx, 1*time.Nanosecond, f); err != context.Canceled {
+			t.Errorf("expected %q to be %q", err, context.Canceled)
+		}
+	})
+
+	t.Run("exit_on_RetryFunc_nonretryable_error", func(t *testing.T) {
+		t.Parallel()
+
+		cnt := 0
+		nonRetryableCnt := 3
+		nonRetryableError := fmt.Errorf("some non-retryable error")
+		f := func(_ context.Context) error {
+			cnt++
+
+			if cnt > nonRetryableCnt {
+				return nonRetryableError
+			}
+
+			return RetryableError(fmt.Errorf("some retryable error"))
+		}
+
+		err := ConstantRetry(context.Background(), 1*time.Nanosecond, f)
+		if !errors.Is(err, ErrNonRetryable) {
+			t.Errorf("expected %q to be %q", err, ErrNonRetryable)
+		}
+		if !errors.Is(err, nonRetryableError) {
+			t.Errorf("expected %q to be %q", err, nonRetryableError)
+		}
+		if cnt != nonRetryableCnt+1 {
+			t.Errorf("expected %d to be %d", cnt, nonRetryableCnt+1)
+		}
+	})
+
+	t.Run("retry_until_nonretryable_error", func(t *testing.T) {
+		t.Parallel()
+
+		cnt := 0
+		maxRetries := 5
+		nonRetryableErr := fmt.Errorf("some non-retryable error")
+		f := func(_ context.Context) error {
+			cnt++
+			if cnt >= maxRetries {
+				return nonRetryableErr
+			}
+			return RetryableError(fmt.Errorf("some retryable error"))
+		}
+
+		err := ConstantRetry(context.Background(), 1*time.Nanosecond, f)
+		if !errors.Is(err, nonRetryableErr) {
+			t.Errorf("expected %q to be %q", err, nonRetryableErr)
+		}
+		if cnt != maxRetries {
+			t.Errorf("expected %d to be %d", cnt, maxRetries)
+		}
+	})
+}
+
+func TestExponentialRetry(t *testing.T) {
+	t.Parallel()
+
+	t.Run("exit_on_context_cancelled", func(t *testing.T) {
+		t.Parallel()
+
+		f := func(_ context.Context) error {
+			return RetryableError(fmt.Errorf("some retryable err"))
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			time.Sleep(10 * time.Nanosecond)
+			cancel()
+		}()
+
+		if err := ExponentialRetry(ctx, 1*time.Nanosecond, f); err != context.Canceled {
+			t.Errorf("expected %q to be %q", err, context.Canceled)
+		}
+	})
+
+	t.Run("exit_on_RetryFunc_nonretryable_error", func(t *testing.T) {
+		t.Parallel()
+
+		cnt := 0
+		nonRetryableCnt := 3
+		nonRetriableErr := fmt.Errorf("some non-retryable error")
+		f := func(_ context.Context) error {
+			cnt++
+
+			if cnt > nonRetryableCnt {
+				return nonRetriableErr
+			}
+
+			return RetryableError(fmt.Errorf("some retryable error"))
+		}
+
+		err := ExponentialRetry(context.Background(), 1*time.Nanosecond, f)
+		if !errors.Is(err, ErrNonRetryable) {
+			t.Errorf("expected %q to be %q", err, ErrNonRetryable)
+		}
+		if !errors.Is(err, nonRetriableErr) {
+			t.Errorf("expected %q to be %q", err, nonRetriableErr)
+		}
+		if cnt != nonRetryableCnt+1 {
+			t.Errorf("expected %d to be %d", cnt, nonRetryableCnt+1)
+		}
+	})
+
+	t.Run("retry_until_nonretryable_error", func(t *testing.T) {
+		t.Parallel()
+
+		cnt := 0
+		maxRetries := 5
+		nonRetriableErr := fmt.Errorf("some non-retryable error")
+		f := func(_ context.Context) error {
+			cnt++
+			if cnt == maxRetries {
+				return nonRetriableErr
+			}
+			return RetryableError(fmt.Errorf("some retryable error"))
+		}
+
+		err := ExponentialRetry(context.Background(), 1*time.Nanosecond, f)
+		if !errors.Is(err, nonRetriableErr) {
+			t.Errorf("expected %q to be %q", err, nonRetriableErr)
+		}
+		if cnt != maxRetries {
+			t.Errorf("expected %d to be %d", cnt, maxRetries)
+		}
+	})
+}
+
+func TestFibonacciRetry(t *testing.T) {
+	t.Parallel()
+
+	t.Run("exit_on_context_cancelled", func(t *testing.T) {
+		t.Parallel()
+
+		f := func(_ context.Context) error {
+			return RetryableError(fmt.Errorf("some retryable err"))
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			time.Sleep(10 * time.Nanosecond)
+			cancel()
+		}()
+
+		if err := FibonacciRetry(ctx, 1*time.Nanosecond, f); err != context.Canceled {
+			t.Errorf("expected %q to be %q", err, context.Canceled)
+		}
+	})
+
+	t.Run("exit_on_RetryFunc_nonretryable_error", func(t *testing.T) {
+		t.Parallel()
+
+		cnt := 0
+		nonRetryableCnt := 3
+		nonRetriableErr := fmt.Errorf("some non-retryable error")
+		f := func(_ context.Context) error {
+			cnt++
+
+			if cnt > nonRetryableCnt {
+				return nonRetriableErr
+			}
+
+			return RetryableError(fmt.Errorf("some retryable error"))
+		}
+
+		err := FibonacciRetry(context.Background(), 1*time.Nanosecond, f)
+		if !errors.Is(err, ErrNonRetryable) {
+			t.Errorf("expected %q to be %q", err, ErrNonRetryable)
+		}
+		if !errors.Is(err, nonRetriableErr) {
+			t.Errorf("expected %q to be %q", err, nonRetriableErr)
+		}
+		if cnt != nonRetryableCnt+1 {
+			t.Errorf("expected %d to be %d", cnt, nonRetryableCnt+1)
+		}
+	})
+
+	t.Run("retry_until_nonretryable_error", func(t *testing.T) {
+		t.Parallel()
+
+		cnt := 0
+		maxRetries := 5
+		nonRetryableErr := fmt.Errorf("some non-retryable error")
+		f := func(_ context.Context) error {
+			cnt++
+			if cnt == maxRetries {
+				return nonRetryableErr
+			}
+			return RetryableError(fmt.Errorf("some retryable error"))
+		}
+
+		err := FibonacciRetry(context.Background(), 1*time.Nanosecond, f)
+		if !errors.Is(err, nonRetryableErr) {
+			t.Errorf("expected %q to be %q", err, nonRetryableErr)
+		}
+		if cnt != maxRetries {
+			t.Errorf("expected %d to be %d", cnt, maxRetries)
+		}
+	})
 }

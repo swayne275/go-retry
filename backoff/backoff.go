@@ -9,8 +9,6 @@ import (
 	"github.com/swayne275/go-retry/internal/random"
 )
 
-// TODO clean up interface, struct, etc
-
 // Backoff is an interface that backs off.
 type Backoff interface {
 	// Next returns the time duration to wait and whether to stop.
