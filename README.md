@@ -5,43 +5,165 @@
 Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
 
 TODO:
-- update godoc to my version
-- update this documentation with changes
-- add benchmarks of mine vs sethvargo (benchmark_test.go)
+- add benchmarks of mine vs sethvargo (benchmark_test.go), and update the benchmarks section of the readme
 
-## Added features
+## Synopsis
 
-### infinite retries until error
-Repeat will continually do whatever is in the RepeatFunc until it returns an error.
+Retry is a Go library for facilitating retry logic and backoff strategies. It builds off the work of [go-retry](https://github.com/sethvargo/go-retry) and adds additional functionality, such as infinite retries until an error occurs and the ability to reset backoff durations. The library is highly extensible, allowing you to implement custom backoff strategies and integrate them seamlessly into your applications.
 
-It does not observe RetryableError, as there is no need for this functionality.
+## Added Features
 
-### backoff reset
-You might want to reset a backoff of non constant duration (eg if an activity happens that
-says you should poll faster).
+### Infinite Retries Until Error
+Repeat will continually do whatever is in the RepeatFunc until it returns an error. It does not observe RetryableError, as there is no need for this functionality.
 
-Retry is a Go library for facilitating retry logic and backoff. It's highly
-extensible with full control over how and when retries occur. You can also write
-your own custom backoff functions by implementing the Backoff interface.
+### Backoff Reset
+You might want to reset a backoff of non-constant duration (e.g., if an activity happens that says you should poll faster).
 
 ## Features
 
-- **Extensible** - Inspired by Go's built-in HTTP package, this Go backoff and
-  retry library is extensible via middleware. You can write custom backoff
-  functions or use a provided filter.
+- **Extensible** - Inspired by Go's built-in HTTP package, this Go backoff and retry library is extensible via middleware. You can write custom backoff functions or use a provided filter.
+- **Independent** - No external dependencies besides the Go standard library, meaning it won't bloat your project.
+- **Concurrent** - Unless otherwise specified, everything is safe for concurrent use.
 
-- **Independent** - No external dependencies besides the Go standard library,
-  meaning it won't bloat your project.
+## Backoff Strategies
 
-- **Concurrent** - Unless otherwise specified, everything is safe for concurrent
-  use.
+### Constant Backoff
+Retries at a constant interval.
 
-- **Context-aware** - Use native Go contexts to control cancellation.
+### Exponential Backoff
+Retries with exponentially increasing intervals.
+
+### Fibonacci Backoff
+Retries with intervals following the Fibonacci sequence.
+
+### Jitter
+Adds randomness to the backoff intervals to prevent thundering herd problems.
+
+### Max Duration
+Limits the total duration of retries.
+
+### Max Retries
+Limits the number of retry attempts.
+
+### Context-Aware Backoff
+Stops the backoff if the provided context is done.
+
+## Installation
+
+To install the library, use the following command:
+
+```sh
+go get github.com/swayne275/go-retry
+```
 
 ## Usage
 
-Here is an example use for connecting to a database using Go's `database/sql`
-package:
+### Basic Retry
+
+This will retry the provided function until it either succeeds or returns a non-retryable error.
+
+```golang
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+
+    "github.com/swayne275/go-retry"
+    "github.com/swayne275/go-retry/backoff"
+)
+
+func main() {
+    ctx := context.Background()
+    backoff := backoff.NewConstant(1 * time.Second)
+
+    err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+        // Your retryable function logic here
+        return nil
+    })
+
+    if err != nil {
+        fmt.Printf("Operation failed: %v\n", err)
+    }
+}
+```
+
+### Infinite Repeat Until Non Retryable Error
+
+This will repeat the function until it returns a non-retryable error.
+
+```golang
+package main
+
+import (
+    "context"
+    "fmt"
+
+    "github.com/swayne275/go-retry/repeat"
+)
+
+func main() {
+    ctx := context.Background()
+    backoff := backoff.NewExponential(1 * time.Second)
+
+    err := repeat.Do(ctx, backoff, func(ctx context.Context) bool {
+        // Your function logic here - return false to stop repeating
+        return true
+    })
+
+    if err != nil {
+        // you can check why the repeat stopped with errors.Is() and the defined
+        // types in the repeat package
+        fmt.Printf("Operation failed: %v\n", err)
+    }
+}
+```
+
+### Backoff Reset
+
+```golang
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+
+    "github.com/swayne275/go-retry"
+    "github.com/swayne275/go-retry/backoff"
+)
+
+func main() {
+    ctx := context.Background()
+    backoff := backoff.NewExponential(1 * time.Second)
+    resetFunc := func() Backoff {
+      // define how the backoff shoudl be reset, likely something like:
+      newB, err := NewExponential(base)
+		  if err != nil {
+			  t.Fatalf("failed to reset exponential backoff: %v", err)
+		  }
+
+		  return newB
+    }
+    backoffWithReset = backoff.WithReset(resetFunc, backoff)
+
+    err := retry.Do(ctx, backoffWithReset, func(ctx context.Context) error {
+        // Your retryable function logic here
+
+        // something happens that makes you want to reset back to a shorter backoff
+        b.Reset()
+
+        return nil
+    })
+
+    if err != nil {
+        fmt.Printf("Operation failed: %v\n", err)
+    }
+}
+```
+
+### Example: connecting to a sql database
 
 ```golang
 package main
@@ -62,7 +184,7 @@ func main() {
   }
 
   ctx := context.Background()
-  if err := retry.Fibonacci(ctx, 1*time.Second, func(ctx context.Context) error {
+  if err := retry.FibonacciRetry(ctx, 1*time.Second, func(ctx context.Context) error {
     if err := db.PingContext(ctx); err != nil {
       // This marks the error as retryable
       return retry.RetryableError(err)
@@ -74,7 +196,7 @@ func main() {
 }
 ```
 
-## Backoffs
+## Backoff Types
 
 In addition to your own custom algorithms, there are built-in algorithms for
 backoff in the library.
@@ -116,7 +238,7 @@ retires happen quickly at first, but then gradually take slower, ideal for
 network-type issues. Here is an example:
 
 ```text
-1s -> 1s -> 2s -> 3s -> 5s -> 8s -> 13s
+1s -> 2s -> 3s -> 5s -> 8s -> 13s
 ```
 
 Usage:
@@ -180,6 +302,18 @@ b, err := NewFibonacci(1 * time.Second)
 
 // Ensure the maximum total retry time is 5s.
 b = WithMaxDuration(5 * time.Second, b)
+```
+
+### WithContext
+
+Stops the backoff if the provided context is Done:
+
+```golang
+b, err := NewFibonacci(1 * time.Second)
+ctx, cancel := context.WithTimeout(context.Background, 1 * time.Millisecond)
+
+// backoff will return stop == true when context is cancelled
+b = WithContext(ctx, b)
 ```
 
 ## Benchmarks

@@ -8,8 +8,8 @@ import (
 	"github.com/swayne275/go-retry/backoff"
 )
 
-var errFunctionSignaledToStop = fmt.Errorf("function signaled to stop")
-var errBackoffSignaledToStop = fmt.Errorf("backoff signaled to stop")
+var ErrFunctionSignaledToStop = fmt.Errorf("function signaled to stop")
+var ErrBackoffSignaledToStop = fmt.Errorf("backoff signaled to stop")
 
 // RepeatFunc is a function passed to retry.
 // It returns true if the function should be repeated, false otherwise.
@@ -28,12 +28,12 @@ func Do(ctx context.Context, b backoff.Backoff, f RepeatFunc) error {
 		}
 
 		if !f(ctx) {
-			return errFunctionSignaledToStop
+			return ErrFunctionSignaledToStop
 		}
 
 		next, stop := b.Next()
 		if stop {
-			return errBackoffSignaledToStop
+			return ErrBackoffSignaledToStop
 		}
 
 		// ctx.Done() has priority, so we test it alone first
@@ -54,8 +54,8 @@ func Do(ctx context.Context, b backoff.Backoff, f RepeatFunc) error {
 	}
 }
 
-// RepeatFunc is a function passed to retry.
-// It returns true if the function should be repeated, false otherwise.
+// RepeatUntilErrorFunc is a function passed to retry.
+// It returns an error if the function should be stopped, nil otherwise.
 type RepeatUntilErrorFunc func(ctx context.Context) error
 
 // DoUntilError wraps a function with a backoff to repeat until f returns an error, or
@@ -71,12 +71,12 @@ func DoUntilError(ctx context.Context, b backoff.Backoff, f RepeatUntilErrorFunc
 		}
 
 		if err := f(ctx); err != nil {
-			return fmt.Errorf("%w: %w", errFunctionSignaledToStop, err)
+			return fmt.Errorf("%w: %w", ErrFunctionSignaledToStop, err)
 		}
 
 		next, stop := b.Next()
 		if stop {
-			return errBackoffSignaledToStop
+			return ErrBackoffSignaledToStop
 		}
 
 		// ctx.Done() has priority, so we test it alone first

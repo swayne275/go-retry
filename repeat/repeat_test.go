@@ -48,8 +48,8 @@ func TestDo(t *testing.T) {
 			return cnt <= maxCnt
 		}
 
-		if err = Do(context.Background(), b, retryFunc); err != errFunctionSignaledToStop {
-			t.Errorf("expected %q to be %q", err, errFunctionSignaledToStop)
+		if err = Do(context.Background(), b, retryFunc); err != ErrFunctionSignaledToStop {
+			t.Errorf("expected %q to be %q", err, ErrFunctionSignaledToStop)
 		}
 		if cnt != maxCnt+1 {
 			t.Errorf("expected %d to be %d", cnt, maxCnt+1)
@@ -65,8 +65,8 @@ func TestDo(t *testing.T) {
 
 		retryFunc := func(_ context.Context) bool { return true }
 
-		if err := Do(context.Background(), backoff, retryFunc); err != errBackoffSignaledToStop {
-			t.Errorf("expected %q to be %q", err, errBackoffSignaledToStop)
+		if err := Do(context.Background(), backoff, retryFunc); err != ErrBackoffSignaledToStop {
+			t.Errorf("expected %q to be %q", err, ErrBackoffSignaledToStop)
 		}
 	})
 }
@@ -112,8 +112,8 @@ func TestDoUntilError(t *testing.T) {
 			return nil
 		}
 
-		if err = DoUntilError(context.Background(), b, retryFunc); !errors.Is(err, errFunctionSignaledToStop) {
-			t.Errorf("expected %q to contain %q", err, errFunctionSignaledToStop)
+		if err = DoUntilError(context.Background(), b, retryFunc); !errors.Is(err, ErrFunctionSignaledToStop) {
+			t.Errorf("expected %q to contain %q", err, ErrFunctionSignaledToStop)
 		}
 		if cnt != maxCnt+1 {
 			t.Errorf("expected %d to be %d", cnt, maxCnt+1)
@@ -129,8 +129,8 @@ func TestDoUntilError(t *testing.T) {
 
 		retryFunc := func(_ context.Context) error { return nil }
 
-		if err := DoUntilError(context.Background(), maxRetryBackoff, retryFunc); err != errBackoffSignaledToStop {
-			t.Errorf("expected %q to be %q", err, errBackoffSignaledToStop)
+		if err := DoUntilError(context.Background(), maxRetryBackoff, retryFunc); err != ErrBackoffSignaledToStop {
+			t.Errorf("expected %q to be %q", err, ErrBackoffSignaledToStop)
 		}
 	})
 }
@@ -164,7 +164,7 @@ func TestConstantRepeat(t *testing.T) {
 			return cnt <= maxCnt
 		}
 
-		if err := ConstantRepeat(context.Background(), 1*time.Nanosecond, f); err != errFunctionSignaledToStop {
+		if err := ConstantRepeat(context.Background(), 1*time.Nanosecond, f); err != ErrFunctionSignaledToStop {
 			t.Errorf("expected %q to be %q", err, context.Canceled)
 		}
 		if cnt != maxCnt+1 {
@@ -202,7 +202,7 @@ func TestExponentialRepeat(t *testing.T) {
 			return cnt <= maxCnt
 		}
 
-		if err := ExponentialRepeat(context.Background(), 1*time.Nanosecond, f); err != errFunctionSignaledToStop {
+		if err := ExponentialRepeat(context.Background(), 1*time.Nanosecond, f); err != ErrFunctionSignaledToStop {
 			t.Errorf("expected %q to be %q", err, context.Canceled)
 		}
 		if cnt != maxCnt+1 {
@@ -240,7 +240,7 @@ func TestFibonacciRepeat(t *testing.T) {
 			return cnt <= maxCnt
 		}
 
-		if err := FibonacciRepeat(context.Background(), 1*time.Nanosecond, f); err != errFunctionSignaledToStop {
+		if err := FibonacciRepeat(context.Background(), 1*time.Nanosecond, f); err != ErrFunctionSignaledToStop {
 			t.Errorf("expected %q to be %q", err, context.Canceled)
 		}
 		if cnt != maxCnt+1 {
