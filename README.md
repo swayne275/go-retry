@@ -7,6 +7,7 @@ Builds off of the wonderful work of https://github.com/sethvargo/go-retry but ad
 TODO:
 - update godoc to my version
 - update this documentation with changes
+- add benchmarks of mine vs sethvargo (benchmark_test.go)
 
 ## Added features
 

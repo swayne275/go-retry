@@ -21,7 +21,7 @@ import (
 	"github.com/swayne275/go-retry/backoff"
 )
 
-var errFunctionReturnedNonRetryableError = fmt.Errorf("function returned non retryable error")
+var ErrNonRetryable = fmt.Errorf("function returned non retryable error")
 var errBackoffSignaledToStop = fmt.Errorf("backoff signaled to stop")
 
 // RetryFunc is a function passed to retry.
@@ -72,7 +72,7 @@ func Do(ctx context.Context, b backoff.Backoff, f RetryFunc) error {
 		// Not retryable
 		var rerr *retryableError
 		if !errors.As(err, &rerr) {
-			return fmt.Errorf("%w: %w", errFunctionReturnedNonRetryableError, err)
+			return fmt.Errorf("%w: %w", ErrNonRetryable, err)
 		}
 
 		next, stop := b.Next()
@@ -96,4 +96,37 @@ func Do(ctx context.Context, b backoff.Backoff, f RetryFunc) error {
 			continue
 		}
 	}
+}
+
+// ConstantRetry is a wrapper around retry that uses a constant backoff. It will
+// retry the function f until it returns a non-retryable error, or the context is canceled.
+func ConstantRetry(ctx context.Context, t time.Duration, f RetryFunc) error {
+	b, err := backoff.NewConstant(t)
+	if err != nil {
+		return fmt.Errorf("failed to create constant backoff: %w", err)
+	}
+
+	return Do(ctx, b, f)
+}
+
+// ExponentialRetry is a wrapper around retry that uses an exponential backoff. It will
+// retry the function f until it returns a non-retryable error, or the context is canceled.
+func ExponentialRetry(ctx context.Context, base time.Duration, f RetryFunc) error {
+	b, err := backoff.NewExponential(base)
+	if err != nil {
+		return fmt.Errorf("failed to create exponential backoff: %w", err)
+	}
+
+	return Do(ctx, b, f)
+}
+
+// FibonacciRetry is a wrapper around retry that uses a FibonacciRetry backoff. It will
+// retry the function f until it returns a non-retryable error, or the context is canceled.
+func FibonacciRetry(ctx context.Context, base time.Duration, f RetryFunc) error {
+	b, err := backoff.NewFibonacci(base)
+	if err != nil {
+		return fmt.Errorf("failed to create fibonacci backoff: %w", err)
+
+	}
+	return Do(ctx, b, f)
 }
