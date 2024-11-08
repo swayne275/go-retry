@@ -35,7 +35,7 @@ Retries at a constant interval.
 Example:
 
 ```text
-1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 64s
+1s -> 1s -> 1s -> 1s -> 1s -> 1s -> 1s
 ```
 
 Usage:
@@ -45,7 +45,9 @@ NewConstant(1 * time.Second)
 ```
 
 #### Exponential Backoff
-Retries with exponentially increasing intervals. Arguably the most common backoff, the next value is double the previous value.
+Retries with exponentially increasing intervals.
+
+Arguably the most common backoff, the next value is double the previous value.
 
 Example:
 
@@ -60,7 +62,9 @@ NewExponential(1 * time.Second)
 ```
 
 #### Fibonacci Backoff
-Retries with intervals following the Fibonacci sequence. The next value is the sum of the current value and the previous value. This means retires happen quickly at first, but then gradually take slower, ideal for
+Retries with intervals following the Fibonacci sequence.
+
+The next value is the sum of the current value and the previous value. This means retires happen quickly at first, but then gradually take slower, ideal for
 network-type issues.
 
 Example:
@@ -84,17 +88,17 @@ also write custom middleware.
 #### Jitter
 Adds randomness to the backoff intervals to prevent thundering herd problems.
 
-To reduce the changes of a thundering herd, add random jitter to the returned
+To reduce the chances of a thundering herd, add random jitter to the returned
 value.
 
 ```golang
-b, err := NewFibonacci(1 * time.Second)
+backoff, err := NewFibonacci(1 * time.Second)
 
 // Return the next value, +/- 500ms
-b, err = WithJitter(500*time.Millisecond, b)
+backoffWithJitter, err := WithJitter(500*time.Millisecond, backoff)
 
 // Return the next value, +/- 5% of the result
-b, err = WithJitterPercent(5, b)
+backoffWithJitterPercent, err := WithJitterPercent(5, backoff)
 ```
 
 #### Capped Duration
@@ -103,11 +107,11 @@ Limits the maximum duration between retries.
 To ensure an individual calculated duration never exceeds a value, use a cap:
 
 ```golang
-b, err := NewFibonacci(1 * time.Second)
+backoff, err := NewFibonacci(1 * time.Second)
 
 // Ensure the maximum value is 2s. In this example, the sleep values would be
 // 1s, 1s, 2s, 2s, 2s, 2s...
-b = WithCappedDuration(2 * time.Second, b)
+backoffWithCap := WithCappedDuration(2 * time.Second, backoff)
 ```
 
 #### Max Duration
@@ -116,10 +120,10 @@ Limits the maximum total time a backoff should execute.
 For a best-effort limit on the total execution time, specify a max duration:
 
 ```golang
-b, err := NewFibonacci(1 * time.Second)
+backoff, err := NewFibonacci(1 * time.Second)
 
 // Ensure the maximum total retry time is 5s.
-b = WithMaxDuration(5 * time.Second, b)
+backoffWithMaxDuration = WithMaxDuration(5 * time.Second, backoff)
 ```
 
 #### Max Retries
@@ -129,22 +133,22 @@ To terminate a retry, specify the maximum number of _retries_. Note this
 is _retries_, not _attempts_. Attempts is retries + 1.
 
 ```golang
-b, err := NewFibonacci(1 * time.Second)
+backoff, err := NewFibonacci(1 * time.Second)
 
 // Stop after 4 retries, when the 5th attempt has failed. In this example, the worst case elapsed
 // time would be 1s + 1s + 2s + 3s = 7s.
-b = WithMaxRetries(4, b)
+backoffWithMaxRetries = WithMaxRetries(4, backoff)
 ```
 
 #### Context-Aware Backoff
 Stops the backoff if the provided context is Done.
 
 ```golang
-b, err := NewFibonacci(1 * time.Second)
+backoff, err := NewFibonacci(1 * time.Second)
 ctx, cancel := context.WithTimeout(context.Background, 1 * time.Millisecond)
 
 // backoff will return stop == true when context is cancelled
-b = WithContext(ctx, b)
+backoffWithContext := WithContext(ctx, backoff)
 ```
 
 ## Installation
