@@ -9,6 +9,7 @@ import (
 	cenkalti "github.com/cenkalti/backoff"
 	lestrrat "github.com/lestrrat-go/backoff"
 	sethvargo "github.com/sethvargo/go-retry"
+	swayne275 "github.com/swayne275/go-retry/backoff"
 )
 
 func Benchmark(b *testing.B) {
@@ -43,6 +44,18 @@ func Benchmark(b *testing.B) {
 
 	b.Run("sethvargo", func(b *testing.B) {
 		backoff := sethvargo.NewExponential(1 * time.Second)
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			backoff.Next()
+		}
+	})
+
+	b.Run("swayne275", func(b *testing.B) {
+		backoff, err := swayne275.NewExponential(1 * time.Second)
+		if err != nil {
+			b.Fatalf("failed to create backoff: %v", err)
+		}
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
