@@ -5,7 +5,6 @@
 Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
 
 TODO:
-- add benchmarks of mine vs sethvargo (benchmark_test.go), and update the benchmarks section of the readme
 - ensure godoc up to date
 
 ## Synopsis
@@ -26,8 +25,7 @@ Retry is a Go library for facilitating retry logic and backoff strategies. It bu
 
 ### Backoff Strategies
 
-In addition to your own custom algorithms, there are built-in algorithms for
-backoff in the library.
+In addition to your own custom algorithms, there are built-in algorithms for backoff in the library.
 
 #### Constant Backoff
 Retries at a constant interval.
@@ -64,8 +62,7 @@ NewExponential(1 * time.Second)
 #### Fibonacci Backoff
 Retries with intervals following the Fibonacci sequence.
 
-The next value is the sum of the current value and the previous value. This means retires happen quickly at first, but then gradually take slower, ideal for
-network-type issues.
+The next value is the sum of the current value and the previous value. This means retires happen quickly at first, but then gradually take slower, ideal for network-type issues.
 
 Example:
 
@@ -81,9 +78,7 @@ NewFibonacci(1 * time.Second)
 
 ### Modifiers (Middleware)
 
-The built-in backoff algorithms never terminate and have no caps or limits - you
-control their behavior with middleware. There's built-in middleware, but you can
-also write custom middleware.
+The built-in backoff algorithms never terminate and have no caps or limits - you control their behavior with middleware. There's built-in middleware, but you can also write custom middleware.
 
 #### Jitter
 Adds randomness to the backoff intervals to prevent thundering herd problems.
@@ -129,8 +124,7 @@ backoffWithMaxDuration = WithMaxDuration(5 * time.Second, backoff)
 #### Max Retries
 Limits the number of retry attempts.
 
-To terminate a retry, specify the maximum number of _retries_. Note this
-is _retries_, not _attempts_. Attempts is retries + 1.
+To terminate a retry, specify the maximum number of _retries_. Note this is _retries_, not _attempts_. Attempts is retries + 1.
 
 ```golang
 backoff, err := NewFibonacci(1 * time.Second)
@@ -301,20 +295,19 @@ func main() {
 
 ## Benchmarks
 
-Here are benchmarks against some other popular Go backoff and retry libraries.
-You can run these benchmarks yourself via the `benchmark/` folder. Commas and
-spacing fixed for clarity.
+Here are benchmarks against some other popular Go backoff and retry libraries. You can run these benchmarks yourself via the `benchmark/` folder. Commas and spacing fixed for clarity.
+
+swayne275 is roughly in line with sethvargo, which is what it's based off of.
 
 ```text
-Benchmark/cenkalti-7      13,052,668     87.3 ns/op
-Benchmark/lestrrat-7         902,044    1,355 ns/op
-Benchmark/sethvargo-7    203,914,245     5.73 ns/op
+cpu: Apple M3 Max
+Benchmark/cenkalti-16         	 36881959	        32.40 ns/op	       0 B/op	       0 allocs/op
+Benchmark/lestrrat-16         	  1990288	        612.5 ns/op	     128 B/op	       2 allocs/op
+Benchmark/sethvargo-16        	345455916	        3.538 ns/op	       0 B/op	       0 allocs/op
+Benchmark/swayne275-16        	339995433	        3.510 ns/op	       0 B/op	       0 allocs/op
 ```
 
 ## Notes and Caveats
 
-- Randomization uses `math/rand` seeded with the Unix timestamp instead of
-  `crypto/rand`.
-- Ordering of addition of multiple modifiers will make a difference.
-  For example; ensure you add `CappedDuration` before `WithMaxDuration`, otherwise it may early out too early.
-  Another example is you could add `Jitter` before or after capping depending on your desired outcome.
+- Randomization uses `math/rand` seeded with the Unix timestamp instead of `crypto/rand`.
+- Ordering of addition of multiple modifiers will make a difference. For example; ensure you add `CappedDuration` before `WithMaxDuration`, otherwise it may bail out too early. Another example is you could add `Jitter` before or after capping depending on your desired outcome.
