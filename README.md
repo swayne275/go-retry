@@ -4,8 +4,6 @@
 
 Builds off of the wonderful work of https://github.com/sethvargo/go-retry but adds additional functionality:
 
-TODO:
-- ensure godoc up to date
 
 ## Synopsis
 
